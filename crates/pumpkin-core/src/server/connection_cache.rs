@@ -97,8 +97,8 @@ impl CachedStatus {
         let supported_min = LOWEST_SUPPORTED_MC_VERSION.protocol_version();
         let supported_max = CURRENT_MC_VERSION.protocol_version();
 
-        if client_protocol >= supported_min
-            && client_protocol <= supported_max
+        if ((client_protocol >= supported_min && client_protocol <= supported_max)
+            || crate::pumpkinx::accepts_protocol(client_protocol))
             && let Some(version) = &mut response.version
         {
             version.protocol = client_protocol as u32;

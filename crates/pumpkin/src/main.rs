@@ -76,6 +76,8 @@ async fn main() {
 
     pumpkin_core::init_logger(&config.advanced);
 
+    let pumpkinx = pumpkinx::PumpkinX::load(&exec_dir);
+
     if let Some(target_arg) = parse_convert_world_arg(std::env::args().skip(1)) {
         let anvil_default = match &config.advanced.world.chunk {
             pumpkin_config::chunk::ChunkConfig::Anvil(cfg) => cfg.clone(),
@@ -119,7 +121,7 @@ async fn main() {
         "{}",
         TextComponent::text(format!(
             "Starting {} {} Java Minecraft (Protocol {}) | {} Bedrock (Protocol {})",
-            TextComponent::text("Pumpkin")
+            TextComponent::text("PumpkinX")
                 .color_named(NamedColor::Gold)
                 .to_pretty_console(),
             TextComponent::text(CARGO_PKG_VERSION.to_string())
@@ -179,7 +181,9 @@ async fn main() {
         tracing::error!("{error}");
         exit(1);
     });
+    pumpkinx.on_server_created(&pumpkin_server.server);
     let plugin_wait_time = pumpkin_server.init_plugins().await;
+    pumpkinx.on_plugins_loaded(&pumpkin_server.server).await;
 
     let time_elapsed = time.elapsed().saturating_sub(plugin_wait_time);
 

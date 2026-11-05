@@ -167,11 +167,7 @@ impl Context {
     ) {
         let permission = permission.into();
 
-        let full_permission_node = if permission.contains(':') {
-            permission
-        } else {
-            format!("{}:{permission}", self.metadata.name)
-        };
+        let full_permission_node = self.full_permission_node(permission);
 
         let mut node = node.into();
         node.meta.source = Some(self.metadata.name.clone());
@@ -200,11 +196,7 @@ impl Context {
     ) {
         let permission = permission.into();
 
-        let full_permission_node = if permission.contains(':') {
-            permission
-        } else {
-            format!("{}:{permission}", self.metadata.name)
-        };
+        let full_permission_node = self.full_permission_node(permission);
 
         let mut node = node.into();
         node.meta.source = Some(self.metadata.name.clone());
@@ -275,12 +267,25 @@ impl Context {
         }
     }
 
+    /// The node as it is checked: `name:node`, unless it already is namespaced or Bukkit style.
+    fn full_permission_node(&self, permission: String) -> String {
+        let name = &self.metadata.name;
+        let bukkit_prefix = format!("{}.", name.to_ascii_lowercase());
+        if permission.contains(':') || permission.to_ascii_lowercase().starts_with(&bukkit_prefix) {
+            permission
+        } else {
+            format!("{name}:{permission}")
+        }
+    }
+
     /// Register a permission for this plugin
     pub fn register_permission(&self, permission: Permission) -> Result<(), String> {
         // Ensure the permission has the correct namespace
-        if !permission
-            .node
-            .starts_with(&format!("{}:", self.metadata.name))
+        // PumpkinX also takes Bukkit style nodes (`keystone.use` for a plugin named `Keystone`).
+        let name = &self.metadata.name;
+        let bukkit_prefix = format!("{}.", name.to_ascii_lowercase());
+        if !permission.node.starts_with(&format!("{name}:"))
+            && !permission.node.to_ascii_lowercase().starts_with(&bukkit_prefix)
         {
             return Err(format!(
                 "Permission {} must use the plugin's namespace ({})",

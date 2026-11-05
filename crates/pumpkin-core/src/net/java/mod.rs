@@ -354,6 +354,14 @@ impl JavaClient {
             return;
         }
 
+        // Clients below 26.3 (multiversion) get chunks in their own format.
+        let version = self.version.load();
+        let legacy_writer = if version == CURRENT_MC_VERSION {
+            None
+        } else {
+            crate::pumpkinx::chunk_writer()
+        };
+
         let (tx, rx) = oneshot::channel();
         server.compute_pool.spawn(move || {
             let mut serialized = Vec::with_capacity(valid_chunks.len());
@@ -364,7 +372,12 @@ impl JavaClient {
                     error!("Failed to write chunk data id: {err:?}");
                     continue;
                 }
-                if let Err(err) =
+                if let Some(writer) = legacy_writer {
+                    if !writer(&chunk, version, &mut buf) {
+                        error!("Failed to write chunk data for {version}");
+                        continue;
+                    }
+                } else if let Err(err) =
                     CChunkData(&chunk).write_packet_data(&mut buf, &CURRENT_MC_VERSION)
                 {
                     error!("Failed to write chunk data: {err:?}");

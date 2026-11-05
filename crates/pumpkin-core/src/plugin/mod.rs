@@ -679,6 +679,31 @@ impl PluginManager {
         Ok(task)
     }
 
+    /// Starts a plugin that is compiled into the server binary instead of read from `plugins/`.
+    pub async fn load_builtin_plugin(
+        self: &Arc<Self>,
+        server: &Arc<Server>,
+        instance: Arc<dyn Plugin>,
+        metadata: PluginMetadata,
+    ) -> Result<(), ManagerError> {
+        let path = PathBuf::from(format!("<builtin>/{}", metadata.name));
+        let task = self
+            .spawn_plugin_initialization(
+                server.clone(),
+                instance,
+                metadata,
+                Box::new(()),
+                Arc::new(loader::BuiltinLoader),
+                path,
+            )
+            .await?;
+        task.await.map_err(|e| {
+            ManagerError::LoaderError(LoaderError::InitializationFailed(format!(
+                "Task join error: {e}"
+            )))
+        })
+    }
+
     /// Load all plugins from the plugin directory
     #[allow(clippy::too_many_lines)]
     pub async fn load_plugins(
@@ -842,6 +867,10 @@ impl PluginManager {
         cache_path: &Path,
         server: &Arc<Server>,
     ) -> (bool, std::time::Duration) {
+        if crate::pumpkinx::is_trusted_plugin(path) {
+            return (true, std::time::Duration::ZERO);
+        }
+
         let plugin_config = &server.advanced_config.plugins;
         let plugin_override = plugin_config.overrides.get(&metadata.name);
 

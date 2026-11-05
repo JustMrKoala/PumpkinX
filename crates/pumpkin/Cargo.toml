@@ -14,6 +14,7 @@ LegalCopyright = "Copyright © 2026 Aleksander Medvedev"
 
 [dependencies]
 pumpkin-core.workspace = true
+pumpkinx = { workspace = true }
 pumpkin-wasm-host.workspace = true
 pumpkin-config.workspace = true
 pumpkin-data = { workspace = true, features = ["default"] }
@@ -27,6 +28,9 @@ tracing.workspace = true
 console-subscriber = { workspace = true, optional = true }
 
 [features]
+default = ["patchbukkit"]
+# Link PatchBukkit into the binary (it is still off until pumpkinx.toml enables it).
+patchbukkit = ["pumpkinx/patchbukkit"]
 console-subscriber = ["dep:console-subscriber"]
 # Load plugins built against the v0.2 API. Off until the v0.2 ABI is finished.
 plugin-v0_2 = ["pumpkin-wasm-host/v0_2"]

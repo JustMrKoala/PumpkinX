@@ -33,10 +33,10 @@ pub fn plugin_method(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let method = quote! {
         #[expect(unused_mut)]
         fn #fn_name(#fn_inputs) -> PluginFuture<'_, #output_type> {
-            crate::GLOBAL_RUNTIME.block_on(async move {
-                Box::pin(async move {
-                    #fn_body
-                })
+            // Only builds the future; the host polls it. No block_on here: a plugin linked
+            // into the server binary shares the host's tokio and would nest runtimes.
+            Box::pin(async move {
+                #fn_body
             })
         }
     }

@@ -276,6 +276,13 @@ impl ChunkSender {
         cache: &mut FxHashMap<Vector2<i32>, EncodedChunk>,
     ) -> Vec<EncodedChunk> {
         let cached_map = &*cache;
+        // Clients below 26.3 (multiversion) get chunks in their own format.
+        let version = batch.target_version;
+        let legacy_writer = if version == CURRENT_MC_VERSION {
+            None
+        } else {
+            crate::pumpkinx::chunk_writer()
+        };
 
         let encoded_results: Vec<Option<EncodedChunk>> = batch
             .chunks
@@ -296,7 +303,11 @@ impl ChunkSender {
                 {
                     return None;
                 }
-                if CChunkData(chunk)
+                if let Some(writer) = legacy_writer {
+                    if !writer(chunk, version, &mut chunk_buf) {
+                        return None;
+                    }
+                } else if CChunkData(chunk)
                     .write_packet_data(&mut chunk_buf, &CURRENT_MC_VERSION)
                     .is_err()
                 {

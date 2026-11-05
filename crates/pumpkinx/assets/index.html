@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PumpkinX Dashboard</title>
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div id="login" class="login hidden">
+    <form id="login-form" class="login-card">
+      <img src="/logo.svg" alt="" class="login-logo">
+      <h1>PumpkinX</h1>
+      <p id="login-note" class="muted">Sign in to your server.</p>
+      <input id="login-token" class="hidden" type="password" autocomplete="off" placeholder="Setup token from pumpkinx.toml" aria-label="Setup token">
+      <input id="login-user" type="text" autocomplete="username" placeholder="Username" aria-label="Username" required>
+      <input id="login-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required>
+      <button id="login-submit" class="btn primary" type="submit">Sign in</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand"><img src="/logo.svg" alt=""><span>Pumpkin<b>X</b></span></div>
+      <nav id="nav">
+        <a data-page="overview" class="active"><span class="ico">◐</span>Overview</a>
+        <a data-page="console"><span class="ico">›_</span>Console</a>
+        <a data-page="players"><span class="ico">☺</span>Players</a>
+        <a data-page="settings"><span class="ico">⚙</span>Server settings</a>
+        <a data-page="files"><span class="ico">▤</span>Files</a>
+        <a data-page="features"><span class="ico">✦</span>PumpkinX features</a>
+        <a data-page="plugins"><span class="ico">▣</span>Plugins</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div id="server-pill" class="pill"><span class="dot"></span><span id="server-pill-text">connecting</span></div>
+        <button id="logout" class="btn ghost small">Sign out</button>
+      </div>
+    </aside>
+
+    <main>
+      <div id="restart-banner" class="banner hidden">
+        Saved changes apply after a restart.
+        <button id="banner-restart" class="btn small">Restart now</button>
+      </div>
+
+      <section id="page-overview" class="page">
+        <header class="page-head">
+          <div><h2 id="motd">Overview</h2><p class="muted" id="version-line"></p></div>
+          <button class="btn danger" data-action="restart">Restart server</button>
+        </header>
+        <div class="stats">
+          <div class="stat"><span class="label">Players</span><span class="value" id="stat-players">-</span></div>
+          <div class="stat"><span class="label">TPS</span><span class="value" id="stat-tps">-</span><span class="sub" id="stat-mspt"></span></div>
+          <div class="stat"><span class="label">Memory</span><span class="value" id="stat-mem">-</span><span class="sub" id="stat-mem-sub"></span></div>
+          <div class="stat"><span class="label">CPU</span><span class="value" id="stat-cpu">-</span></div>
+          <div class="stat"><span class="label">Uptime</span><span class="value" id="stat-uptime">-</span></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-head"><h3>Tick time</h3><span class="muted small">last 5 minutes, ms per tick</span></div>
+            <canvas id="tick-chart" height="160"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Worlds</h3></div>
+            <ul id="world-list" class="list"></ul>
+            <div class="card-head"><h3>Built-in features</h3></div>
+            <ul id="feature-list" class="list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-console" class="page hidden">
+        <header class="page-head">
+          <div><h2>Console</h2><p class="muted">Live server log. Commands run as the console.</p></div>
+          <div class="row">
+            <select id="log-level">
+              <option value="trace">All levels</option>
+              <option value="info" selected>Info and up</option>
+              <option value="warn">Warnings and errors</option>
+              <option value="error">Errors only</option>
+            </select>
+            <input id="log-filter" placeholder="Filter text">
+          </div>
+        </header>
+        <div id="log" class="log"></div>
+        <form id="command-form" class="command">
+          <span class="prompt">&gt;</span>
+          <input id="command-input" placeholder="say Hello from the dashboard" autocomplete="off">
+          <button class="btn primary" type="submit">Run</button>
+        </form>
+      </section>
+
+      <section id="page-players" class="page hidden">
+        <header class="page-head">
+          <div><h2>Players</h2><p class="muted" id="players-sub"></p></div>
+          <form id="whitelist-form" class="row">
+            <input id="whitelist-name" placeholder="Player name">
+            <button class="btn" type="submit">Add to whitelist</button>
+          </form>
+        </header>
+        <div class="card flush">
+          <table class="table">
+            <thead><tr><th>Name</th><th>Client</th><th>World</th><th>Mode</th><th>Position</th><th>Ping</th><th></th></tr></thead>
+            <tbody id="players-body"></tbody>
+          </table>
+          <p id="players-empty" class="empty">Nobody is online.</p>
+        </div>
+      </section>
+
+      <section id="page-settings" class="page hidden">
+        <header class="page-head">
+          <div><h2>Server settings</h2><p class="muted">The server profile, and below it everything in <code>pumpkin.toml</code>. A backup is written to <code>pumpkin.toml.bak</code> on save.</p></div>
+          <div class="row">
+            <input id="settings-search" placeholder="Search settings">
+            <button id="settings-save" class="btn primary">Save</button>
+          </div>
+        </header>
+        <div class="card profile">
+          <div class="card-head"><h3>Server profile</h3><span class="muted small">What players see in the server list</span></div>
+          <div class="profile-preview">
+            <img id="profile-icon" src="/logo.svg" alt="Server icon" width="64" height="64">
+            <div class="profile-text">
+              <strong>Server list preview</strong>
+              <span id="profile-motd-preview" class="muted"></span>
+            </div>
+            <button id="profile-icon-pick" class="btn small" type="button">Change icon</button>
+            <input id="profile-icon-input" type="file" accept="image/*" class="hidden">
+          </div>
+          <label class="field"><span>Description<small>The line under the name in the server list</small></span><input id="profile-motd" maxlength="120"></label>
+          <label class="field"><span>Max players</span><input id="profile-max" type="number" min="1" step="1"></label>
+          <label class="field"><span>Difficulty</span><select id="profile-difficulty"><option>Peaceful</option><option>Easy</option><option>Normal</option><option>Hard</option></select></label>
+          <label class="field"><span>Default game mode</span><select id="profile-gamemode"><option>Survival</option><option>Creative</option><option>Adventure</option><option>Spectator</option></select></label>
+          <label class="field"><span>View distance</span><input id="profile-view" type="number" min="2" max="64" step="1"></label>
+          <div class="field"><span>Whitelist<small>Only listed players can join</small></span><label class="switch"><input type="checkbox" id="profile-whitelist" aria-label="Whitelist"><span></span></label></div>
+          <div class="row profile-actions"><button id="profile-save" class="btn primary">Save profile</button></div>
+        </div>
+        <div id="settings-form" class="settings"></div>
+      </section>
+
+      <section id="page-files" class="page hidden">
+        <header class="page-head">
+          <div><h2>Files</h2><p class="muted">Everything in the server folder. Deleted files go to <code>.pumpkinx-trash</code> first.</p></div>
+          <div class="row">
+            <button id="files-new-file" class="btn">New file</button>
+            <button id="files-new-folder" class="btn">New folder</button>
+            <button id="files-upload" class="btn primary">Upload</button>
+            <input id="files-input" type="file" multiple class="hidden">
+          </div>
+        </header>
+        <nav id="files-crumbs" class="crumbs" aria-label="Current folder"></nav>
+        <p id="files-progress" class="muted small hidden" role="status"></p>
+        <div id="files-drop" class="card flush">
+          <table class="table">
+            <thead><tr><th>Name</th><th>Size</th><th>Modified</th><th></th></tr></thead>
+            <tbody id="files-body"></tbody>
+          </table>
+          <p id="files-empty" class="empty hidden">This folder is empty. Drop files here to upload.</p>
+        </div>
+        <div id="file-editor" class="card editor hidden">
+          <div class="card-head">
+            <h3 id="editor-name"></h3>
+            <div class="row">
+              <span id="editor-state" class="muted small"></span>
+              <button id="editor-save" class="btn primary small">Save</button>
+              <button id="editor-close" class="btn small">Close</button>
+            </div>
+          </div>
+          <textarea id="editor-text" spellcheck="false" aria-label="File contents"></textarea>
+        </div>
+      </section>
+
+      <section id="page-features" class="page hidden">
+        <header class="page-head">
+          <div><h2>PumpkinX features</h2><p class="muted">Stored in <code>pumpkinx.toml</code>. Changes apply after a restart.</p></div>
+          <button id="features-save" class="btn primary">Save</button>
+        </header>
+        <div class="feature-cards">
+          <div class="card feature">
+            <div class="feature-head">
+              <div><h3>Multiversion</h3><p class="muted">Translates older Java Edition clients to 26.3 inside the server. Tested joining: <span id="mv-range">1.21.11 and 26.1</span>. Older versions are admitted but can't finish joining yet.</p></div>
+              <label class="switch"><input type="checkbox" id="f-multiversion"><span></span></label>
+            </div>
+            <p class="state" id="mv-state"></p>
+          </div>
+          <div class="card feature">
+            <div class="feature-head">
+              <div><h3>PatchBukkit</h3><p class="muted">Runs Bukkit, Spigot and Paper plugins. Needs Java 25 or newer. Drop jars into <code id="pb-dir"></code>.</p></div>
+              <label class="switch"><input type="checkbox" id="f-patchbukkit"><span></span></label>
+            </div>
+            <p class="state" id="pb-state"></p>
+            <ul id="pb-jars" class="list"></ul>
+          </div>
+          <div class="card feature">
+            <div class="feature-head">
+              <div><h3>Keystone</h3><p class="muted">Economy, shop, auctions, roles, sidebar, login and skins. Ops manage it in game with <code>/myserver</code>. Its files are in <code>plugins/data/Keystone</code>.</p></div>
+              <label class="switch"><input type="checkbox" id="f-keystone" aria-label="Keystone"><span></span></label>
+            </div>
+            <p class="state" id="ks-state"></p>
+          </div>
+          <div class="card feature">
+            <div class="feature-head">
+              <div><h3>Dashboard</h3><p class="muted">Address this dashboard listens on. Turning it off locks you out until you edit <code>pumpkinx.toml</code> by hand.</p></div>
+              <label class="switch"><input type="checkbox" id="f-dashboard"><span></span></label>
+            </div>
+            <label class="field"><span>Listen address</span><input id="f-address" placeholder="0.0.0.0:8080"></label>
+            <div class="field"><span>File manager<small>Every account can upload plugins, which run as code on this machine.</small></span><label class="switch"><input type="checkbox" id="f-files" aria-label="File manager"><span></span></label></div>
+          </div>
+          <div class="card feature">
+            <h3>Accounts</h3>
+            <p class="muted">Everyone who can sign in here has full control of the server.</p>
+            <ul id="user-list" class="list"></ul>
+            <form id="user-form" class="row account-form">
+              <input id="user-name" placeholder="Username" autocomplete="off" aria-label="New username" required>
+              <input id="user-password" type="password" placeholder="Password (8 or more characters)" autocomplete="new-password" aria-label="New password" required>
+              <button class="btn" type="submit">Add account</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-plugins" class="page hidden">
+        <header class="page-head">
+          <div><h2>Plugins</h2><p class="muted">Native and Wasm plugins from <code>plugins/</code>. Built-ins are on the PumpkinX features page.</p></div>
+        </header>
+        <div id="plugins-list" class="plugin-grid"></div>
+        <div id="plugins-failed"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toasts" class="toasts"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

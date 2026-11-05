@@ -59,6 +59,7 @@ pub mod entity;
 pub mod error;
 pub mod item;
 pub mod logging;
+pub mod pumpkinx;
 pub mod net;
 pub mod plugin;
 pub mod server;
@@ -171,6 +172,7 @@ pub fn init_logger(advanced_config: &AdvancedConfiguration) {
                 fmt_layer.with_timer(fmt::time::OffsetTime::new(local_offset, timer_format));
             let registry = tracing_subscriber::registry()
                 .with(env_filter)
+                .with(crate::pumpkinx::LogTapLayer)
                 .with(fmt_layer);
             if let Some(file_logger) = file_logger {
                 registry.with(file_logger).init();
@@ -181,6 +183,7 @@ pub fn init_logger(advanced_config: &AdvancedConfiguration) {
             let fmt_layer = fmt_layer.without_time();
             let registry = tracing_subscriber::registry()
                 .with(env_filter)
+                .with(crate::pumpkinx::LogTapLayer)
                 .with(fmt_layer);
             if let Some(file_logger) = file_logger {
                 registry.with(file_logger).init();

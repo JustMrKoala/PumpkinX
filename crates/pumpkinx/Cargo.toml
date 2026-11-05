@@ -1,0 +1,42 @@
+[package]
+name = "pumpkinx"
+version.workspace = true
+description = "PumpkinX layer: built-in multiversion support, PatchBukkit and the web dashboard."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = ["patchbukkit"]
+# Links PatchBukkit (Bukkit, Spigot and Paper plugin support) into the binary.
+# It still has to be switched on in pumpkinx.toml, and it needs Java 25 at runtime.
+patchbukkit = ["dep:patchbukkit"]
+
+[dependencies]
+pumpkin-core.workspace = true
+pumpkin-config.workspace = true
+pumpkin-data = { workspace = true, features = ["default"] }
+pumpkin-protocol.workspace = true
+pumpkin-util.workspace = true
+pumpkin-world.workspace = true
+pumpkin-java-multiversion = { path = "../../builtin/multiversion", default-features = false }
+patchbukkit = { path = "../../builtin/patchbukkit/rust", optional = true }
+
+argon2 = "0.5"
+axum = { workspace = true, features = ["json", "query"] }
+bytes.workspace = true
+futures.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sysinfo.workspace = true
+tokio = { workspace = true, features = ["net", "rt", "sync", "time", "fs", "io-util"] }
+tokio-util = { workspace = true, features = ["io"] }
+toml.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

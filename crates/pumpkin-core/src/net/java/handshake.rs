@@ -31,7 +31,9 @@ impl PendingConnection {
         }
         if self.connection_state.load() != ConnectionState::Status {
             let protocol = version;
-            if protocol < LOWEST_SUPPORTED_MC_VERSION.protocol_version() as u32 {
+            if protocol < LOWEST_SUPPORTED_MC_VERSION.protocol_version() as u32
+                && !crate::pumpkinx::accepts_protocol(protocol as i32)
+            {
                 self.kick(TextComponent::translate_cross(
                     translation::java::MULTIPLAYER_DISCONNECT_OUTDATED_CLIENT,
                     translation::bedrock::DISCONNECTIONSCREEN_OUTDATEDCLIENT,

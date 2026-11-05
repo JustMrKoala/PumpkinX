@@ -7,6 +7,32 @@ use thiserror::Error;
 
 pub mod native;
 
+/// Loader for plugins compiled into the server binary (PumpkinX built-ins).
+/// They never come from a file and stay loaded until shutdown.
+pub struct BuiltinLoader;
+
+impl PluginLoader for BuiltinLoader {
+    fn load<'a>(&'a self, _path: &'a Path) -> PluginLoadFuture<'a> {
+        Box::pin(async {
+            Err(LoaderError::RuntimeError(
+                "built-in plugins are not loaded from files".to_string(),
+            ))
+        })
+    }
+
+    fn can_load(&self, _path: &Path) -> bool {
+        false
+    }
+
+    fn unload(&self, _data: Box<dyn Any + Send + Sync>) -> PluginUnloadFuture<'_> {
+        Box::pin(async { Ok(()) })
+    }
+
+    fn can_unload(&self) -> bool {
+        false
+    }
+}
+
 pub type PluginLoadFuture<'a> = Pin<
     Box<
         dyn Future<
