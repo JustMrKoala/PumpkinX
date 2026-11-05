@@ -1,6 +1,6 @@
-//! PumpkinX hooks inside the core.
+//! `PumpkinX` hooks inside the core.
 //!
-//! The PumpkinX layer (`crates/pumpkinx`) sets these switches at startup. They live in the
+//! The `PumpkinX` layer (`crates/pumpkinx`) sets these switches at startup. They live in the
 //! core because the handshake, the server list ping and the logger need to read them.
 
 use std::collections::VecDeque;

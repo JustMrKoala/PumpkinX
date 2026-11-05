@@ -260,6 +260,9 @@ pub struct World {
     synced_block_event_queue: std::sync::Mutex<Vec<BlockEvent>>,
     /// A map of unsent block changes, keyed by block position.
     unsent_block_changes: std::sync::Mutex<HashMap<BlockPos, BlockStateId>>,
+    /// Goes up with every block write. Lets caches notice that the world changed.
+    pub(crate) block_changes: std::sync::atomic::AtomicU64,
+    pub(crate) exposure_cache: std::sync::Mutex<explosion::ExposureCache>,
     /// Persisted vanilla POI storage for portal and villager lookups.
     pub portal_poi: std::sync::Mutex<portal::PortalPoiStorage>,
     /// Villager job sites and their current owners.
@@ -422,6 +425,8 @@ impl World {
             min_y: i32::from(generation_settings.shape.min_y),
             synced_block_event_queue: std::sync::Mutex::new(Vec::new()),
             unsent_block_changes: std::sync::Mutex::new(HashMap::new()),
+            block_changes: std::sync::atomic::AtomicU64::new(0),
+            exposure_cache: std::sync::Mutex::default(),
             portal_poi: std::sync::Mutex::new(portal_poi),
             villager_poi: std::sync::Mutex::new(villager_poi::VillagerPoiStorage::default()),
             wandering_trader_spawner: wandering_trader_spawner::WanderingTraderSpawner::default(),
@@ -5437,9 +5442,13 @@ impl World {
                     block_state_id,
                     &condition,
                 )?;
-                // Mark chunk dirty if it isn't already
-                if replaced_block_state_id != block_state_id && !chunk.is_dirty() {
-                    chunk.mark_dirty(true);
+                if replaced_block_state_id != block_state_id {
+                    self.block_changes
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    // Mark chunk dirty if it isn't already
+                    if !chunk.is_dirty() {
+                        chunk.mark_dirty(true);
+                    }
                 }
                 Some(replaced_block_state_id)
             })

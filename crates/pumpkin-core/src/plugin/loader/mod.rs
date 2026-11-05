@@ -7,7 +7,7 @@ use thiserror::Error;
 
 pub mod native;
 
-/// Loader for plugins compiled into the server binary (PumpkinX built-ins).
+/// Loader for plugins compiled into the server binary (`PumpkinX` built-ins).
 /// They never come from a file and stay loaded until shutdown.
 pub struct BuiltinLoader;
 

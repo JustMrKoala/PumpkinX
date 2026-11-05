@@ -31,6 +31,16 @@ Changes to upstream Pumpkin files are kept small so upstream merges stay easy:
 - `pumpkin-api-macros`: `#[plugin_method]` no longer calls `block_on` just to box a future, which panicked once a plugin shares the host's tokio.
 - `crates/pumpkin/src/main.rs`: loads `pumpkinx.toml` and starts the PumpkinX layer.
 
+## Explosions
+
+PumpkinX explosions are much cheaper than upstream's, with the same results as vanilla. Measured with 147 TNT in dirt, the total explosion time went from about 7900 ms to 620 ms, and with 600 stacked TNT from about 1500 ms to 310 ms.
+
+- Drops merge into stacks of up to 16 and spawn after all blocks are gone, like vanilla's `ServerExplosion`. Upstream spawned an entity per block.
+- Ray directions are computed once, and each block is inspected once per explosion in a flat grid.
+- Exposure of entities is reused within a tick for an identical explosion center and entity box, as long as no block changed.
+
+The server also identifies itself as `PumpkinX` in the F3 screen.
+
 ## Building
 
 Needs Rust stable, and for PatchBukkit a JDK 25 (Gradle builds the Java bridge).
