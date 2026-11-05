@@ -1,0 +1,59 @@
+# Roles. Change them here or in game with /role.
+# priority: higher shows first in tab and wins when sidebar boards overlap.
+# permissions: "*" is everything, "worldedit.*" is everything starting with worldedit, "-node" denies.
+# inherits: take every permission of another role first.
+# money-multiplier: multiplies reward money (1.5 means 50% more).
+# name-color: vanilla color of the name above the head (gray, gold, red, aqua and so on).
+# chat-format: optional, replaces chat.format from config.yml for this role.
+
+default-role: member
+
+roles:
+  member:
+    display: Member
+    priority: 0
+    prefix: "<gray>[Member] "
+    suffix: ""
+    name-color: gray
+    money-multiplier: 1.0
+    permissions:
+      - keystone.balance
+      - keystone.pay
+      - keystone.shop
+      - keystone.sell
+      - keystone.ah
+      - keystone.ah.sell
+      - keystone.skin
+  vip:
+    display: VIP
+    priority: 10
+    prefix: "<gold>[VIP] "
+    suffix: ""
+    name-color: gold
+    money-multiplier: 1.5
+    inherits: [member]
+    permissions:
+      - keystone.chat.color
+  mod:
+    display: Moderator
+    priority: 50
+    prefix: "<aqua>[Mod] "
+    suffix: ""
+    name-color: aqua
+    money-multiplier: 1.0
+    inherits: [vip]
+    permissions:
+      - keystone.auth.admin
+      - minecraft.command.kick
+      - minecraft.command.ban
+  admin:
+    display: Admin
+    priority: 100
+    prefix: "<red><bold>[Admin]</bold> "
+    suffix: ""
+    name-color: red
+    chat-format: "{role_prefix}<red>{player}</red> <dark_gray>»</dark_gray> <white><message>"
+    money-multiplier: 1.0
+    inherits: [mod]
+    permissions:
+      - "*"

@@ -1,0 +1,134 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message AsyncStructureGenerateEvent {
+  string world_name = 1;
+  string structure_name = 2;
+  int32 block_x = 3;
+  int32 block_y = 4;
+  int32 block_z = 5;
+}
+
+message AsyncStructureSpawnEvent {
+  string world_name = 1;
+  string structure_name = 2;
+  int32 block_x = 3;
+  int32 block_y = 4;
+  int32 block_z = 5;
+}
+
+message ChunkLoad {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message ChunkPopulateEvent {
+  int32 chunk_x = 1;
+  int32 chunk_z = 2;
+}
+
+message ChunkSave {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message ChunkSend {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message ChunkUnloadEvent {
+  int32 chunk_x = 1;
+  int32 chunk_z = 2;
+}
+
+message EntitiesLoadEvent {
+  int32 chunk_x = 1;
+  int32 chunk_z = 2;
+  int64 entity_count = 3;
+}
+
+message EntitiesUnloadEvent {
+  int32 chunk_x = 1;
+  int32 chunk_z = 2;
+  int64 entity_count = 3;
+}
+
+message GenericGameEvent {
+  string event_key = 1;
+  double pos_x = 2;
+  double pos_y = 3;
+  double pos_z = 4;
+}
+
+message LightningStrikeEvent {
+  double pos_x = 1;
+  double pos_y = 2;
+  double pos_z = 3;
+  bool is_effect = 4;
+}
+
+message LootGenerateEvent {
+  string loot_table = 1;
+}
+
+message PortalCreateEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string portal_type = 4;
+}
+
+message SpawnChangeEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+  int32 previous_position_x = 2;
+  int32 previous_position_y = 3;
+  int32 previous_position_z = 4;
+  float previous_yaw = 5;
+  float previous_pitch = 6;
+  int32 new_position_x = 7;
+  int32 new_position_y = 8;
+  int32 new_position_z = 9;
+  float new_yaw = 10;
+  float new_pitch = 11;
+}
+
+message StructureGrowEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string species = 4;
+  bool bone_meal = 5;
+}
+
+message TimeSkipEvent {
+  int64 skip_amount = 1;
+}
+
+message WeatherChangeEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+  bool to_weather_state = 2;
+}
+
+message ThunderChangeEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+  bool to_thunder_state = 2;
+}
+
+message WorldInitEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message WorldLoadEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message WorldUnloadEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message WorldSaveEvent {
+  string world_name = 1;
+}

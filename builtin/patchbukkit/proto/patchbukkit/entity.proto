@@ -1,0 +1,249 @@
+syntax = "proto3";
+
+package patchbukkit.entity;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.entity";
+
+message EntityHealthResponse {
+  double health = 1;
+  double max_health = 2;
+}
+
+message SetEntityHealthRequest {
+  patchbukkit.common.UUID uuid = 1;
+  double health = 2;
+}
+
+message DamageEntityRequest {
+  patchbukkit.common.UUID uuid = 1;
+  double amount = 2;
+}
+
+message SetEntityVelocityRequest {
+  patchbukkit.common.UUID uuid = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+}
+
+message TeleportEntityRequest {
+  patchbukkit.common.UUID uuid = 1;
+  patchbukkit.common.Location location = 2;
+}
+
+message SetEntityPoseRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string pose = 2;
+}
+
+message EntityVelocityResponse {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message GetGamemodeResponse {
+  int32 gamemode = 1;
+}
+
+message SetGamemodeRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int32 gamemode = 2;
+}
+
+message IsOnGroundResponse {
+  bool on_ground = 1;
+}
+
+message GetPlayerLocaleResponse {
+  string locale = 1;
+}
+
+message IsOpResponse {
+  bool is_op = 1;
+}
+
+message SetOpRequest {
+  patchbukkit.common.UUID uuid = 1;
+  bool is_op = 2;
+}
+
+message GetFoodLevelResponse {
+  int32 food_level = 1;
+  float saturation = 2;
+  float exhaustion = 3;
+}
+
+message SetFoodLevelRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int32 food_level = 2;
+}
+
+message SetSaturationRequest {
+  patchbukkit.common.UUID uuid = 1;
+  float saturation = 2;
+}
+
+message SetExhaustionRequest {
+  patchbukkit.common.UUID uuid = 1;
+  float exhaustion = 2;
+}
+
+message GetExperienceResponse {
+  int32 level = 1;
+  float progress = 2;
+  int32 total_experience = 3;
+}
+
+message SetExperienceRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int32 level = 2;
+  float progress = 3;
+  int32 total_experience = 4;
+}
+
+message KickPlayerRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string message = 2;
+}
+
+message SendTitleRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string title = 2;
+  string subtitle = 3;
+  int32 fade_in = 4;
+  int32 stay = 5;
+  int32 fade_out = 6;
+}
+
+message SendActionBarRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string message = 2;
+}
+
+message SetDisplayNameRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string display_name = 2;
+}
+
+message SetPlayerListNameRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string list_name = 2;
+}
+
+message SetPlayerListHeaderFooterRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string header = 2;
+  string footer = 3;
+}
+
+message GetPlayerPoseStateResponse {
+  bool is_sneaking = 1;
+  bool is_sprinting = 2;
+  bool is_gliding = 3;
+  bool is_swimming = 4;
+  bool is_sleeping = 5;
+}
+
+message SetSneakingRequest {
+  patchbukkit.common.UUID uuid = 1;
+  bool sneaking = 2;
+}
+
+message SetSprintingRequest {
+  patchbukkit.common.UUID uuid = 1;
+  bool sprinting = 2;
+}
+
+message SetPlayerTimeRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int64 time = 2;
+  bool relative = 3;
+}
+
+message SetPlayerWeatherRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int32 weather = 2;
+}
+
+message SetCompassTargetRequest {
+  patchbukkit.common.UUID uuid = 1;
+  patchbukkit.common.Vec3 position = 2;
+}
+
+message SetRespawnPointRequest {
+  patchbukkit.common.UUID uuid = 1;
+  patchbukkit.common.Vec3 position = 2;
+  float yaw = 3;
+  bool force = 4;
+}
+
+message StopSoundRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string sound = 2;
+  string category = 3;
+}
+
+message SendBlockChangeRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 z = 4;
+  string block_state = 5;
+}
+
+message SendResourcePackRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string url = 2;
+  string prompt = 3;
+  bool required = 4;
+}
+
+message PlayerConnectionInfoResponse {
+  int32 ping = 1;
+  string address = 2;
+  int32 port = 3;
+  string client_brand = 4;
+}
+
+message SendGameEventRequest {
+  patchbukkit.common.UUID uuid = 1;
+  int32 event_type = 2;
+  float value = 3;
+}
+
+message SetCooldownRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string item_group = 2;
+  int32 duration_ticks = 3;
+}
+
+message GetCooldownRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string item_group = 2;
+}
+
+message GetCooldownResponse {
+  float cooldown = 1;
+  bool is_on_cooldown = 2;
+}
+
+message GetEntityIdResponse {
+  int32 entity_id = 1;
+}
+
+message GetEntityUuidRequest {
+  int32 entity_id = 1;
+}
+
+message GetEntityUuidResponse {
+  patchbukkit.common.UUID uuid = 1;
+}
+
+message SendRawPacketRequest {
+  patchbukkit.common.UUID uuid = 1;
+  bytes payload = 2;
+}

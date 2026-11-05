@@ -1,0 +1,234 @@
+syntax = "proto3";
+
+package patchbukkit.world;
+
+import "google/protobuf/empty.proto";
+import "patchbukkit/common/types.proto";
+import "patchbukkit/itemstack.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.world";
+
+message GetBlockDataRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 z = 4;
+}
+
+message GetBlockDataResponse {
+  string block_state = 1;
+}
+
+message SetBlockDataRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 z = 4;
+  string block_state = 5;
+  bool apply_physics = 6;
+}
+
+message SpawnParticleRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  string particle = 2;
+  double x = 3;
+  double y = 4;
+  double z = 5;
+  int32 count = 6;
+  double offset_x = 7;
+  double offset_y = 8;
+  double offset_z = 9;
+  double extra = 10;
+  bool force = 11;
+  bytes data = 12;
+}
+
+message GetWorldsResponse {
+  repeated patchbukkit.common.UUID world_uuids = 1;
+}
+
+message WorldBorderData {
+  double center_x = 1;
+  double center_z = 2;
+  double size = 3;
+  double target_size = 4;
+  int64 speed = 5;
+  int32 warning_time = 6;
+  int32 warning_blocks = 7;
+  double damage_per_block = 8;
+  double damage_buffer = 9;
+  int32 max_center_coordinate = 10;
+}
+
+message GetWorldBorderRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message SetWorldBorderRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  WorldBorderData border = 2;
+}
+
+message GetWorldInfoRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message GetWorldInfoResponse {
+  int32 min_height = 1;
+  int32 max_height = 2;
+  int32 height = 3;
+  int64 seed = 4;
+  string name = 5;
+  string dimension = 6;
+  int32 sea_level = 7;
+  int32 logical_height = 8;
+  string difficulty = 9;
+  bool hardcore = 10;
+  bool pvp = 11;
+  int32 spawn_x = 12;
+  int32 spawn_y = 13;
+  int32 spawn_z = 14;
+  float spawn_angle = 15;
+  int64 time = 16;
+  int64 full_time = 17;
+  bool is_storm = 18;
+  bool is_thundering = 19;
+  int32 weather_duration = 20;
+  int32 thunder_duration = 21;
+  int32 clear_weather_duration = 22;
+}
+
+message SetWorldTimeRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  int64 time = 2;
+  int64 full_time = 3;
+}
+
+message SetWorldWeatherRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  bool storm = 2;
+  bool thundering = 3;
+  int32 weather_duration = 4;
+  int32 thunder_duration = 5;
+  int32 clear_weather_duration = 6;
+}
+
+message SetWorldSpawnRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 z = 4;
+  float angle = 5;
+}
+
+message SetWorldDifficultyRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  string difficulty = 2;
+}
+
+message SetWorldPvpRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  bool pvp = 2;
+}
+
+message SetWorldGameruleRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  string rule = 2;
+  string value = 3;
+}
+
+message GetWorldGamerulesRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message GetWorldGamerulesResponse {
+  map<string, string> gamerules = 1;
+}
+
+message EntitySummaryProto {
+  patchbukkit.common.UUID uuid = 1;
+  string entity_type = 2;
+  double x = 3;
+  double y = 4;
+  double z = 5;
+  float yaw = 6;
+  float pitch = 7;
+  bool is_player = 8;
+  string custom_name = 9;
+  int32 entity_id = 10;
+}
+
+message GetWorldEntitiesRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message GetWorldEntitiesResponse {
+  repeated EntitySummaryProto entities = 1;
+}
+
+message SpawnWorldEntityRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  string entity_type = 2;
+  double x = 3;
+  double y = 4;
+  double z = 5;
+  float yaw = 6;
+  float pitch = 7;
+  patchbukkit.common.UUID entity_uuid = 8;
+  int32 entity_id = 9;
+  patchbukkit.itemstack.ItemStack item_stack = 10;
+  int32 experience = 11;
+}
+
+message SpawnWorldEntityResponse {
+  patchbukkit.common.UUID entity_uuid = 1;
+  bool success = 2;
+  int32 entity_id = 3;
+}
+
+message CreateWorldExplosionRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+  float power = 5;
+  bool set_fire = 6;
+  bool break_blocks = 7;
+}
+
+message PlayWorldSoundRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  string sound = 2;
+  string category = 3;
+  double x = 4;
+  double y = 5;
+  double z = 6;
+  float volume = 7;
+  float pitch = 8;
+  int64 seed = 9;
+}
+
+message ChunkCoordProto {
+  int32 x = 1;
+  int32 z = 2;
+}
+
+message SetChunkForceLoadedRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  int32 x = 2;
+  int32 z = 3;
+  bool forced = 4;
+}
+
+message GetForceLoadedChunksRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+}
+
+message GetForceLoadedChunksResponse {
+  repeated ChunkCoordProto chunks = 1;
+}
+
+message SaveWorldRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+}

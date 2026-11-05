@@ -1,0 +1,33 @@
+[package]
+name = "pumpkin-java-multiversion"
+version = "0.1.0"
+edition = "2024"
+authors = ["Pumpkin Developer"]
+description = "Multi-version Java Edition protocol support plugin for Pumpkin"
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+pumpkin-plugin-api = { optional = true, path = "../../crates/pumpkin-plugin-api", version = "0.2" }
+pumpkin-protocol = { path = "../../crates/pumpkin-protocol", version = "0.2" }
+pumpkin-util = { path = "../../crates/pumpkin-util", version = "0.2" }
+pumpkin-nbt = { path = "../../crates/pumpkin-nbt", version = "0.2" }
+pumpkin-data = { path = "../../crates/pumpkin-data", version = "0.2" }
+tracing = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bytes = "1.10"
+flate2 = "1.0"
+uuid = { version = "1.26", default-features = false, features = ["js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
+phf = { version = "0.11", features = ["macros"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+pumpkin-world = { path = "../../crates/pumpkin-world", version = "0.2" }
+
+[features]
+default = ["wasm-plugin"]
+# Builds the standalone Wasm plugin entry point. PumpkinX links the translator natively without it.
+wasm-plugin = ["dep:pumpkin-plugin-api"]

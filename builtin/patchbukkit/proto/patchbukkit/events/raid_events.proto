@@ -1,0 +1,28 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message RaidFinishEvent {
+  bool victory = 1;
+}
+
+message RaidSpawnWaveEvent {
+  uint32 wave = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+}
+
+message RaidStopEvent {
+  string reason = 1;
+}
+
+message RaidTriggerEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+}

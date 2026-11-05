@@ -1,0 +1,58 @@
+# The sidebar on the right side of the screen. Edit here or in game with /sidebar.
+#
+# Each board can have:
+#   roles:  only players with one of these roles see it. Empty means everyone.
+#   worlds: only shown in these worlds. Empty means all worlds.
+#   title:  one line, or a list of frames that animate.
+#   lines:  up to 15 lines. An empty string makes an empty line.
+# A player sees the first board that matches their role, otherwise the board called "default".
+#
+# Placeholders: {server} {server_name} {server_address} {player} {displayname} {balance} {balance_short} {balance_raw} {currency}
+# {role} {role_prefix} {role_suffix} {online} {max_players} {world} {x} {y} {z} {ping}
+# {health} {max_health} {food} {level} {kills} {deaths} {tps} {time} {date} {world_time}
+# PlaceholderAPI %placeholders% work too when it is installed.
+
+update-ticks: 20
+title-frame-ticks: 10
+
+boards:
+  default:
+    roles: []
+    worlds: []
+    title:
+      - "<gradient:#ffb000:#ffe066><bold>  {server_name}  </bold></gradient>"
+      - "<gradient:#ffc233:#fff0a0><bold>  {server_name}  </bold></gradient>"
+      - "<gradient:#ffe066:#ffb000><bold>  {server_name}  </bold></gradient>"
+      - "<white><bold>  {server_name}  </bold>"
+    lines:
+      - "<dark_gray>{date}  {time}"
+      - ""
+      - "<white>Player <yellow>{player}"
+      - "<white>Role {role_prefix}"
+      - "<white>Money <green>{balance}"
+      - ""
+      - "<white>Online <aqua>{online}<gray>/{max_players}"
+      - "<white>Ping <aqua>{ping}ms"
+      - "<white>Kills <red>{kills} <gray>Deaths <red>{deaths}"
+      - ""
+      - "<yellow>{server_address}"
+  staff:
+    roles: [mod, admin]
+    worlds: []
+    title:
+      - "<red><bold>  STAFF  </bold>"
+      - "<gold><bold>  STAFF  </bold>"
+    lines:
+      - "<dark_gray>{date}  {time}"
+      - ""
+      - "<white>{role_prefix}<white>{player}"
+      - "<white>Money <green>{balance_short}"
+      - ""
+      - "<white>Online <aqua>{online}<gray>/{max_players}"
+      - "<white>TPS <green>{tps}"
+      - "<white>Ping <aqua>{ping}ms"
+      - ""
+      - "<white>World <yellow>{world}"
+      - "<white>XYZ <gray>{x} {y} {z}"
+      - ""
+      - "<yellow>{server_address}"

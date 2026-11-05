@@ -1,0 +1,386 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message BellResonateEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+}
+
+message BellRingEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  patchbukkit.common.UUID entity_uuid = 5;
+}
+
+message BlockBreakEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string block = 2;
+  int32 block_x = 3;
+  int32 block_y = 4;
+  int32 block_z = 5;
+  uint32 exp = 6;
+  bool drop = 7;
+}
+
+message BlockBrushEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  patchbukkit.common.UUID player_uuid = 5;
+  string item_name = 6;
+  int32 item_count = 7;
+}
+
+message BlockBurnEvent {
+  string igniting_block = 1;
+  string block = 2;
+}
+
+message BlockCanBuildEvent {
+  string block_to_build = 1;
+  bool buildable = 2;
+  patchbukkit.common.UUID player_uuid = 3;
+  string block = 4;
+}
+
+message BlockCookEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  string source_name = 5;
+  int32 source_count = 6;
+  string result_name = 7;
+  int32 result_count = 8;
+}
+
+message BlockDamageEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string block = 2;
+  int32 block_x = 3;
+  int32 block_y = 4;
+  int32 block_z = 5;
+  bool insta_break = 6;
+}
+
+message BlockDamageAbortEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+  patchbukkit.common.UUID world_uuid = 5;
+  string item_in_hand_name = 6;
+  int32 item_in_hand_count = 7;
+}
+
+message BlockDispenseEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string item_name = 4;
+}
+
+message BlockDispenseArmorEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  patchbukkit.common.UUID target_uuid = 5;
+  string item_name = 6;
+  int32 item_count = 7;
+}
+
+message BlockDispenseLootEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  repeated string items_names = 5;
+}
+
+message BlockDropItemEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  patchbukkit.common.UUID player_uuid = 5;
+  repeated string items_names = 6;
+}
+
+message BlockExpEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  int32 exp = 5;
+}
+
+message BlockExplodeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  float yield_rate = 4;
+}
+
+message BlockFadeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string block = 4;
+}
+
+message BlockFertilizeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  patchbukkit.common.UUID player_uuid = 5;
+}
+
+message BlockFormEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string block = 4;
+}
+
+message BlockFromToEvent {
+  int32 from_pos_x = 1;
+  int32 from_pos_y = 2;
+  int32 from_pos_z = 3;
+  int32 to_pos_x = 4;
+  int32 to_pos_y = 5;
+  int32 to_pos_z = 6;
+  string block = 7;
+}
+
+message BlockGrowEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+  string old_block = 2;
+  int32 old_state_id = 3;
+  string new_block = 4;
+  int32 new_state_id = 5;
+  int32 block_x = 6;
+  int32 block_y = 7;
+  int32 block_z = 8;
+}
+
+message BlockIgniteEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string igniting_block = 4;
+  patchbukkit.common.UUID player_uuid = 5;
+}
+
+message BlockMultiPlaceEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  patchbukkit.common.UUID world_uuid = 2;
+}
+
+message BlockPhysicsEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  int32 changed_pos_x = 4;
+  int32 changed_pos_y = 5;
+  int32 changed_pos_z = 6;
+}
+
+message BlockPistonExtendEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string direction = 4;
+}
+
+message BlockPistonRetractEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string direction = 4;
+}
+
+message BlockPlaceEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string block_placed = 2;
+  string block_placed_against = 3;
+  int32 block_x = 4;
+  int32 block_y = 5;
+  int32 block_z = 6;
+  bool can_build = 7;
+}
+
+message BlockReceiveGameEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  string game_event = 5;
+  patchbukkit.common.UUID source_entity_uuid = 6;
+}
+
+message BlockRedstoneEvent {
+  patchbukkit.common.UUID world_uuid = 1;
+  int32 block_state_id = 2;
+  int32 block_x = 3;
+  int32 block_y = 4;
+  int32 block_z = 5;
+  int32 old_current = 6;
+  int32 new_current = 7;
+}
+
+message BlockShearEntityEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  patchbukkit.common.UUID target_uuid = 5;
+  string item_name = 6;
+  int32 item_count = 7;
+}
+
+message BlockSpreadEvent {
+  int32 source_pos_x = 1;
+  int32 source_pos_y = 2;
+  int32 source_pos_z = 3;
+  int32 target_pos_x = 4;
+  int32 target_pos_y = 5;
+  int32 target_pos_z = 6;
+  patchbukkit.common.UUID world_uuid = 7;
+  int32 new_state_id = 8;
+}
+
+message BrewingStartEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  int32 brewing_time = 5;
+}
+
+message CampfireStartEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  string item_name = 5;
+  int32 item_count = 6;
+  uint32 slot = 7;
+  int32 cooking_time = 8;
+}
+
+message CauldronLevelChangeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  int32 old_level = 5;
+  int32 new_level = 6;
+  string reason = 7;
+  patchbukkit.common.UUID entity_uuid = 8;
+}
+
+message CrafterCraftEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  string result_name = 5;
+  int32 result_count = 6;
+}
+
+message EntityBlockFormEvent {
+  patchbukkit.common.UUID entity_uuid = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+  patchbukkit.common.UUID world_uuid = 5;
+  int32 new_state_id = 6;
+}
+
+message FluidLevelChangeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  int32 new_state_id = 5;
+}
+
+message InventoryBlockStartEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+}
+
+message LeavesDecayEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+}
+
+message MoistureChangeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  int32 new_moisture = 5;
+}
+
+message NotePlayEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string instrument = 4;
+  uint32 note = 5;
+}
+
+message SculkBloomEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  int32 charge = 5;
+}
+
+message SignChangeEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+  repeated string lines = 5;
+}
+
+message SpongeAbsorbEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+}
+
+message TNTPrimeEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string prime_reason = 4;
+}
+
+message VaultDisplayItemEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  patchbukkit.common.UUID world_uuid = 4;
+  string item_name = 5;
+  int32 item_count = 6;
+}

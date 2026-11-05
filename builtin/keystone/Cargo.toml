@@ -1,0 +1,27 @@
+[package]
+name = "keystone-pumpkin"
+version = "1.0.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+description = "Keystone for Pumpkin servers"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pumpkin-plugin-api = { path = "../../crates/pumpkin-plugin-api" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+base64 = "0.22"
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+sha2 = "0.10"
+hmac = "0.12"
+getrandom = "0.3"
+waki = "0.5"
+tracing = "0.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

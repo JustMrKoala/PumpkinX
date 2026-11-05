@@ -1,0 +1,108 @@
+# The shop, opened with /shop.
+#
+# The easy way: hold an item and type /shop add <category> <buy price> [sell price].
+# Use -1 as a price to turn buying or selling off.
+#
+# The detailed way: write items here. Every item can have:
+#   material:   the item (STONE, DIAMOND_SWORD and so on)
+#   amount:     how many you get per purchase (default 1)
+#   name, lore: custom name and lore lines
+#   buy, sell:  prices, -1 turns that side off
+#   commands:   console commands run on purchase, {player} is the buyer
+#   give-item:  false to only run the commands (ranks, perks, keys)
+#   permission: needed to buy it
+# Items added in game with enchantments or custom data are saved as item-data.
+#
+# In the menu: left click buys, shift left click buys a full stack,
+# right click sells one, shift right click sells all you carry.
+
+title: "<dark_green><bold>Shop"
+main-rows: 3
+filler: GRAY_STAINED_GLASS_PANE
+
+categories:
+  blocks:
+    name: "<green>Blocks"
+    icon: GRASS_BLOCK
+    slot: 10
+    items:
+      stone:
+        material: STONE
+        amount: 16
+        buy: 8
+        sell: 2
+      oak_log:
+        material: OAK_LOG
+        amount: 16
+        buy: 24
+        sell: 6
+      glass:
+        material: GLASS
+        amount: 16
+        buy: 20
+        sell: -1
+  ores:
+    name: "<aqua>Ores"
+    icon: DIAMOND
+    slot: 12
+    items:
+      coal:
+        material: COAL
+        buy: 5
+        sell: 1
+      iron_ingot:
+        material: IRON_INGOT
+        buy: 20
+        sell: 5
+      gold_ingot:
+        material: GOLD_INGOT
+        buy: 40
+        sell: 10
+      diamond:
+        material: DIAMOND
+        buy: 250
+        sell: 60
+  food:
+    name: "<gold>Food"
+    icon: COOKED_BEEF
+    slot: 14
+    items:
+      bread:
+        material: BREAD
+        amount: 8
+        buy: 16
+        sell: 2
+      steak:
+        material: COOKED_BEEF
+        amount: 8
+        buy: 30
+        sell: -1
+  ranks:
+    name: "<light_purple>Ranks and perks"
+    icon: NETHER_STAR
+    slot: 16
+    items:
+      vip:
+        material: GOLD_BLOCK
+        name: "<gold><bold>VIP rank"
+        lore:
+          - "<gray>Gold name, colored chat"
+          - "<gray>and 50% more reward money."
+        buy: 5000
+        sell: -1
+        give-item: false
+        commands:
+          - "role set {player} vip"
+      starter_kit:
+        material: CHEST
+        name: "<yellow>Starter kit"
+        lore:
+          - "<gray>Iron tools and some food."
+        buy: 750
+        sell: -1
+        give-item: false
+        commands:
+          - "minecraft:give {player} iron_pickaxe 1"
+          - "minecraft:give {player} iron_axe 1"
+          - "minecraft:give {player} iron_sword 1"
+          - "minecraft:give {player} bread 16"

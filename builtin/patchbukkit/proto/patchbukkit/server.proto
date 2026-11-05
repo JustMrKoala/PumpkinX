@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package patchbukkit.server;
+
+import "google/protobuf/empty.proto";
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.server";
+
+message ServerInfoResponse {
+  string server_name = 1;
+  string version = 2;
+  string bukkit_version = 3;
+  string minecraft_version = 4;
+  string motd = 5;
+  string ip = 6;
+  int32 port = 7;
+  int32 max_players = 8;
+  int32 view_distance = 9;
+  int32 simulation_distance = 10;
+  bool allow_flight = 11;
+  bool allow_nether = 12;
+  bool allow_end = 13;
+  bool online_mode = 14;
+  bool hardcore = 15;
+  bool pvp = 16;
+  bool has_whitelist = 17;
+  bool is_whitelist_enforced = 18;
+  int32 spawn_protection = 19;
+  string default_gamemode = 20;
+  int32 idle_timeout = 21;
+  bool generate_structures = 22;
+  int32 max_world_size = 23;
+}
+
+message SetServerMotdRequest {
+  string motd = 1;
+}
+
+message SetServerMaxPlayersRequest {
+  int32 max_players = 1;
+}
+
+message SetServerWhitelistRequest {
+  bool enabled = 1;
+}
+
+message SetServerWhitelistEnforcedRequest {
+  bool enforced = 1;
+}
+
+message SetServerIdleTimeoutRequest {
+  int32 timeout_minutes = 1;
+}
+
+message SetServerDefaultGamemodeRequest {
+  string gamemode = 1;
+}
+
+message ServerTickInfoResponse {
+  repeated double tps = 1;
+  float tick_rate = 2;
+  bool is_frozen = 3;
+  bool is_sprinting = 4;
+  bool is_stepping = 5;
+  double average_tick_time = 6;
+  int64 tick_count = 7;
+  repeated int64 tick_times_nanos = 8;
+}
+
+message SetServerTickRateRequest {
+  float tick_rate = 1;
+  bool frozen = 2;
+}
+
+message ShutdownServerRequest {
+  bool save = 1;
+  string message = 2;
+}
+
+message BroadcastMessageRequest {
+  string message = 1;
+  string permission = 2;
+}
+
+message WhitelistEntryProto {
+  patchbukkit.common.UUID uuid = 1;
+  string name = 2;
+}
+
+message GetWhitelistResponse {
+  repeated WhitelistEntryProto players = 1;
+}
+
+message SetWhitelistPlayerRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string name = 2;
+  bool whitelisted = 3;
+}
+
+message OperatorEntryProto {
+  patchbukkit.common.UUID uuid = 1;
+  string name = 2;
+  int32 level = 3;
+  bool bypasses_player_limit = 4;
+}
+
+message GetOperatorsResponse {
+  repeated OperatorEntryProto operators = 1;
+}
+
+message SetOperatorRequest {
+  patchbukkit.common.UUID uuid = 1;
+  string name = 2;
+  int32 level = 3;
+  bool is_op = 4;
+}
+
+message BanEntryProto {
+  string target = 1;
+  string source = 2;
+  int64 created = 3;
+  int64 expires = 4;
+  string reason = 5;
+}
+
+message GetBanListRequest {
+  string ban_type = 1; // "NAME" or "IP" or "PROFILE"
+}
+
+message GetBanListResponse {
+  repeated BanEntryProto entries = 1;
+}
+
+message SetBanEntryRequest {
+  string ban_type = 1; // "NAME" or "IP" or "PROFILE"
+  BanEntryProto entry = 2;
+  bool remove = 3;
+}
+
+message CreateWorldRequest {
+  string name = 1;
+  string dimension = 2; // "minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"
+  int64 seed = 3;
+}
+
+message CreateWorldResponse {
+  patchbukkit.common.UUID world_uuid = 1;
+  string name = 2;
+  bool success = 3;
+}
+
+message UnloadWorldRequest {
+  patchbukkit.common.UUID world_uuid = 1;
+  string world_name = 2;
+  bool save = 3;
+}
+
+message UnloadWorldResponse {
+  bool success = 1;
+}

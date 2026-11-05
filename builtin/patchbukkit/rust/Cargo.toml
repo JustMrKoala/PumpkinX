@@ -1,0 +1,73 @@
+[package]
+name = "patchbukkit"
+version = "0.2.1"
+edition = "2024"
+authors = ["PumpkinMC Contributors"]
+description = "Compatibility layer for running Bukkit, Spigot, and Paper plugins on Pumpkin"
+
+build = "build/main.rs"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pumpkin = { path = "../../../crates/pumpkin-core", package = "pumpkin-core" }
+pumpkin-data = { path = "../../../crates/pumpkin-data", package = "pumpkin-data" }
+pumpkin-protocol = { path = "../../../crates/pumpkin-protocol", package = "pumpkin-protocol" }
+pumpkin-util = { path = "../../../crates/pumpkin-util", package = "pumpkin-util" }
+pumpkin-config = { path = "../../../crates/pumpkin-config", package = "pumpkin-config" }
+pumpkin-nbt = { path = "../../../crates/pumpkin-nbt", package = "pumpkin-nbt" }
+pumpkin-api-macros = { path = "../../../crates/pumpkin-api-macros", package = "pumpkin-api-macros" }
+
+tokio = "1"
+tracing = { version = "0.1.44", default-features = false, features = ["std", "attributes"] }
+glob = "0.3.4"
+jni = { version = "0.22.4", features = ["invocation"] }
+rust-embed = { version = "8.13.0", features = ["interpolate-folder-path"] }
+walkdir = "2"
+zip = { version = "9.2", default-features = false, features = ["deflate-flate2"] }
+
+anyhow = "1.0"
+uuid = "1.29.0"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-saphyr = "2.0.0"
+
+rand = { version = "0.10.3", default-features = false, features = ["std", "std_rng", "thread_rng"] }
+prost = "0.14"
+bytes = "1.12"
+time = { version = "0.3", default-features = false, features = ["std"] }
+
+toml = { version = "1.1", default-features = false, features = ["parse", "display", "serde"] }
+ureq = { version = "3", features = ["json"] }
+sha2 = { version = "=0.11.0", default-features = false, features = ["oid"] }
+
+[dev-dependencies]
+tempfile = "3"
+arc-swap = "1.9"
+tracing-subscriber = { version = "0.3.23", default-features = false, features = [
+    "env-filter",
+    "fmt",
+    "ansi",
+    "time",
+    "std",
+] }
+
+[build-dependencies]
+env_logger = "0.11.11"
+log = "0.4"
+prost-build = "0.14"
+protoc-bin-vendored = "3"
+glob = "0.3.4"
+
+[lints.clippy]
+# Groups
+all = { level = "deny", priority = -1 }
+# nursery = { level = "deny", priority = -1 }
+# pedantic = { level = "deny", priority = -1 }
+# cargo = { level = "deny", priority = -1 }
+
+multiple_crate_versions = "allow"
+unnecessary_fallible_conversions = "allow"
+not_unsafe_ptr_arg_deref = "allow" # Not sure about this one

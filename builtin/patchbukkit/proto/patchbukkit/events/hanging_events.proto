@@ -1,0 +1,26 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message HangingBreakEvent {
+  patchbukkit.common.UUID entity_uuid = 1;
+  patchbukkit.common.UUID remover_uuid = 2;
+}
+
+message HangingBreakByEntityEvent {
+  patchbukkit.common.UUID entity_uuid = 1;
+  patchbukkit.common.UUID remover_uuid = 2;
+}
+
+message HangingPlaceEvent {
+  patchbukkit.common.UUID entity_uuid = 1;
+  patchbukkit.common.UUID player_uuid = 2;
+  int32 block_x = 3;
+  int32 block_y = 4;
+  int32 block_z = 5;
+  string block_face = 6;
+}

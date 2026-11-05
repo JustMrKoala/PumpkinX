@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package patchbukkit.itemstack;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.itemstack";
+option java_outer_classname = "ItemStackProto";
+
+// message GetPatchBukkitConfigResponse {
+//   string minimum_supported_plugin_api = 1;
+// }
+
+message ItemStack {
+  string type = 1;
+  uint32 amount = 2;
+  uint32 damage = 3;
+  string custom_name = 4;
+  repeated string lore = 5;
+  map<string, uint32> enchantments = 6;
+  bool unbreakable = 7;
+  bytes custom_data = 8;
+  bytes item_nbt = 9;
+}
+
+message GetPlayerInventoryResponse {
+  repeated ItemStack main_inventory = 1;
+  uint32 selected_slot = 2;
+  ItemStack off_hand = 3;
+  ItemStack helmet = 4;
+  ItemStack chestplate = 5;
+  ItemStack leggings = 6;
+  ItemStack boots = 7;
+}
+
+message SetPlayerInventorySlotRequest {
+  patchbukkit.common.UUID uuid = 1;
+  uint32 slot = 2;
+  ItemStack item = 3;
+}
+
+message SetPlayerSelectedSlotRequest {
+  patchbukkit.common.UUID uuid = 1;
+  uint32 slot = 2;
+}
+
+message SetPlayerEquipmentRequest {
+  patchbukkit.common.UUID uuid = 1;
+  uint32 slot_type = 2;
+  ItemStack item = 3;
+}
+

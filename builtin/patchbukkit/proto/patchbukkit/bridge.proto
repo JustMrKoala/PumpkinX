@@ -1,0 +1,159 @@
+syntax = "proto3";
+package patchbukkit.bridge;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "patchbukkit/abilities.proto";
+import "patchbukkit/command.proto";
+import "patchbukkit/common/types.proto";
+import "patchbukkit/config.proto";
+import "patchbukkit/entity.proto";
+import "patchbukkit/events/event.proto";
+import "patchbukkit/itemstack.proto";
+import "patchbukkit/log.proto";
+import "patchbukkit/message.proto";
+import "patchbukkit/registry.proto";
+import "patchbukkit/server.proto";
+import "patchbukkit/sound.proto";
+import "patchbukkit/world.proto";
+
+service NativeBridge {
+  rpc GetAbilities(patchbukkit.common.UUID) returns (patchbukkit.abilities.Abilities);
+  rpc SetAbilities(patchbukkit.abilities.SetAbilitiesRequest) returns (patchbukkit.abilities.SetAbilitiesResponse);
+
+  rpc GetEntityHealth(patchbukkit.common.UUID) returns (patchbukkit.entity.EntityHealthResponse);
+  rpc GetEntityId(patchbukkit.common.UUID) returns (patchbukkit.entity.GetEntityIdResponse);
+  rpc GetEntityUuid(patchbukkit.entity.GetEntityUuidRequest) returns (patchbukkit.entity.GetEntityUuidResponse);
+  rpc SetEntityHealth(patchbukkit.entity.SetEntityHealthRequest) returns (google.protobuf.Empty);
+  rpc DamageEntity(patchbukkit.entity.DamageEntityRequest) returns (google.protobuf.Empty);
+  rpc GetEntityVelocity(patchbukkit.common.UUID) returns (patchbukkit.entity.EntityVelocityResponse);
+  rpc SetEntityVelocity(patchbukkit.entity.SetEntityVelocityRequest) returns (google.protobuf.Empty);
+  rpc SetEntityPose(patchbukkit.entity.SetEntityPoseRequest) returns (google.protobuf.Empty);
+  rpc TeleportEntity(patchbukkit.entity.TeleportEntityRequest) returns (google.protobuf.Empty);
+  rpc RemoveEntity(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+  rpc GetGamemode(patchbukkit.common.UUID) returns (patchbukkit.entity.GetGamemodeResponse);
+  rpc SetGamemode(patchbukkit.entity.SetGamemodeRequest) returns (google.protobuf.Empty);
+  rpc IsOnGround(patchbukkit.common.UUID) returns (patchbukkit.entity.IsOnGroundResponse);
+  rpc GetPlayerLocale(patchbukkit.common.UUID) returns (patchbukkit.entity.GetPlayerLocaleResponse);
+  rpc IsOp(patchbukkit.common.UUID) returns (patchbukkit.entity.IsOpResponse);
+  rpc SetOp(patchbukkit.entity.SetOpRequest) returns (google.protobuf.Empty);
+
+  rpc GetFoodLevel(patchbukkit.common.UUID) returns (patchbukkit.entity.GetFoodLevelResponse);
+  rpc SetFoodLevel(patchbukkit.entity.SetFoodLevelRequest) returns (google.protobuf.Empty);
+  rpc SetSaturation(patchbukkit.entity.SetSaturationRequest) returns (google.protobuf.Empty);
+  rpc SetExhaustion(patchbukkit.entity.SetExhaustionRequest) returns (google.protobuf.Empty);
+
+  rpc GetExperience(patchbukkit.common.UUID) returns (patchbukkit.entity.GetExperienceResponse);
+  rpc SetExperience(patchbukkit.entity.SetExperienceRequest) returns (google.protobuf.Empty);
+
+  rpc KickPlayer(patchbukkit.entity.KickPlayerRequest) returns (google.protobuf.Empty);
+  rpc SendTitle(patchbukkit.entity.SendTitleRequest) returns (google.protobuf.Empty);
+  rpc SendActionBar(patchbukkit.entity.SendActionBarRequest) returns (google.protobuf.Empty);
+  rpc ResetTitle(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+
+  rpc SetDisplayName(patchbukkit.entity.SetDisplayNameRequest) returns (google.protobuf.Empty);
+  rpc SetPlayerListName(patchbukkit.entity.SetPlayerListNameRequest) returns (google.protobuf.Empty);
+  rpc SetPlayerListHeaderFooter(patchbukkit.entity.SetPlayerListHeaderFooterRequest) returns (google.protobuf.Empty);
+
+  rpc GetPlayerPoseState(patchbukkit.common.UUID) returns (patchbukkit.entity.GetPlayerPoseStateResponse);
+  rpc SetSneaking(patchbukkit.entity.SetSneakingRequest) returns (google.protobuf.Empty);
+  rpc SetSprinting(patchbukkit.entity.SetSprintingRequest) returns (google.protobuf.Empty);
+
+  rpc SetPlayerTime(patchbukkit.entity.SetPlayerTimeRequest) returns (google.protobuf.Empty);
+  rpc ResetPlayerTime(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+  rpc SetPlayerWeather(patchbukkit.entity.SetPlayerWeatherRequest) returns (google.protobuf.Empty);
+  rpc ResetPlayerWeather(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+
+  rpc SetCompassTarget(patchbukkit.entity.SetCompassTargetRequest) returns (google.protobuf.Empty);
+  rpc GetCompassTarget(patchbukkit.common.UUID) returns (patchbukkit.common.Vec3);
+  rpc SetRespawnPoint(patchbukkit.entity.SetRespawnPointRequest) returns (google.protobuf.Empty);
+  rpc GetRespawnPoint(patchbukkit.common.UUID) returns (patchbukkit.common.Location);
+
+  rpc StopSound(patchbukkit.entity.StopSoundRequest) returns (google.protobuf.Empty);
+  rpc SendBlockChange(patchbukkit.entity.SendBlockChangeRequest) returns (google.protobuf.Empty);
+  rpc SendResourcePack(patchbukkit.entity.SendResourcePackRequest) returns (google.protobuf.Empty);
+  rpc GetPlayerConnectionInfo(patchbukkit.common.UUID) returns (patchbukkit.entity.PlayerConnectionInfoResponse);
+  rpc SendGameEvent(patchbukkit.entity.SendGameEventRequest) returns (google.protobuf.Empty);
+  rpc SendRawPacket(patchbukkit.entity.SendRawPacketRequest) returns (google.protobuf.Empty);
+
+  rpc SetCooldown(patchbukkit.entity.SetCooldownRequest) returns (google.protobuf.Empty);
+  rpc GetCooldown(patchbukkit.entity.GetCooldownRequest) returns (patchbukkit.entity.GetCooldownResponse);
+
+  rpc OpenEnderChest(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+  rpc UpdateInventory(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+
+  rpc GetPlayerInventory(patchbukkit.common.UUID) returns (patchbukkit.itemstack.GetPlayerInventoryResponse);
+  rpc SetPlayerInventorySlot(patchbukkit.itemstack.SetPlayerInventorySlotRequest) returns (google.protobuf.Empty);
+  rpc SetPlayerSelectedSlot(patchbukkit.itemstack.SetPlayerSelectedSlotRequest) returns (google.protobuf.Empty);
+  rpc SetPlayerEquipment(patchbukkit.itemstack.SetPlayerEquipmentRequest) returns (google.protobuf.Empty);
+  rpc ClearPlayerInventory(patchbukkit.common.UUID) returns (google.protobuf.Empty);
+
+  rpc GetBlockData(patchbukkit.world.GetBlockDataRequest) returns (patchbukkit.world.GetBlockDataResponse);
+  rpc SetBlockData(patchbukkit.world.SetBlockDataRequest) returns (google.protobuf.Empty);
+  rpc SpawnParticle(patchbukkit.world.SpawnParticleRequest) returns (google.protobuf.Empty);
+  rpc GetWorlds(patchbukkit.common.EmptyRequest) returns (patchbukkit.world.GetWorldsResponse);
+  rpc GetWorldBorder(patchbukkit.world.GetWorldBorderRequest) returns (patchbukkit.world.WorldBorderData);
+  rpc SetWorldBorder(patchbukkit.world.SetWorldBorderRequest) returns (google.protobuf.Empty);
+
+  rpc RegisterEvent(patchbukkit.events.RegisterEventRequest) returns (google.protobuf.Empty);
+  rpc CallEvent(patchbukkit.events.CallEventRequest) returns (patchbukkit.events.CallEventResponse);
+
+  rpc SendMessage(patchbukkit.message.SendMessageRequest) returns (google.protobuf.Empty);
+
+  rpc GetLocation(patchbukkit.common.UUID) returns (patchbukkit.common.Location);
+
+  rpc GetRegistryData(patchbukkit.registry.GetRegistryDataRequest) returns (patchbukkit.registry.GetRegistryDataResponse);
+
+  rpc PlayerEntityPlaySound(patchbukkit.sound.PlayerEntityPlaySoundRequest) returns (google.protobuf.Empty);
+  rpc PlayerPlaySound(patchbukkit.sound.PlayerPlaySoundRequest) returns (google.protobuf.Empty);
+
+  rpc SendLog(patchbukkit.log.SendLogRequest) returns (google.protobuf.Empty);
+
+  rpc GetPatchBukkitConfig(patchbukkit.common.EmptyRequest) returns (patchbukkit.config.GetPatchBukkitConfigResponse);
+
+  rpc RegisterCommand(patchbukkit.command.RegisterCommandRequest) returns (google.protobuf.Empty);
+
+  rpc GetWorldInfo(patchbukkit.world.GetWorldInfoRequest) returns (patchbukkit.world.GetWorldInfoResponse);
+  rpc SetWorldTime(patchbukkit.world.SetWorldTimeRequest) returns (google.protobuf.Empty);
+  rpc SetWorldWeather(patchbukkit.world.SetWorldWeatherRequest) returns (google.protobuf.Empty);
+  rpc SetWorldSpawn(patchbukkit.world.SetWorldSpawnRequest) returns (google.protobuf.Empty);
+  rpc SetWorldDifficulty(patchbukkit.world.SetWorldDifficultyRequest) returns (google.protobuf.Empty);
+  rpc SetWorldPvp(patchbukkit.world.SetWorldPvpRequest) returns (google.protobuf.Empty);
+  rpc SetWorldGamerule(patchbukkit.world.SetWorldGameruleRequest) returns (google.protobuf.Empty);
+  rpc GetWorldGamerules(patchbukkit.world.GetWorldGamerulesRequest) returns (patchbukkit.world.GetWorldGamerulesResponse);
+  rpc GetWorldEntities(patchbukkit.world.GetWorldEntitiesRequest) returns (patchbukkit.world.GetWorldEntitiesResponse);
+  rpc SpawnWorldEntity(patchbukkit.world.SpawnWorldEntityRequest) returns (patchbukkit.world.SpawnWorldEntityResponse);
+  rpc CreateWorldExplosion(patchbukkit.world.CreateWorldExplosionRequest) returns (google.protobuf.Empty);
+  rpc PlayWorldSound(patchbukkit.world.PlayWorldSoundRequest) returns (google.protobuf.Empty);
+  rpc SetChunkForceLoaded(patchbukkit.world.SetChunkForceLoadedRequest) returns (google.protobuf.Empty);
+  rpc GetForceLoadedChunks(patchbukkit.world.GetForceLoadedChunksRequest) returns (patchbukkit.world.GetForceLoadedChunksResponse);
+  rpc SaveWorld(patchbukkit.world.SaveWorldRequest) returns (google.protobuf.Empty);
+
+  rpc GetServerInfo(patchbukkit.common.EmptyRequest) returns (patchbukkit.server.ServerInfoResponse);
+  rpc SetServerMotd(patchbukkit.server.SetServerMotdRequest) returns (google.protobuf.Empty);
+  rpc SetServerMaxPlayers(patchbukkit.server.SetServerMaxPlayersRequest) returns (google.protobuf.Empty);
+  rpc SetServerWhitelist(patchbukkit.server.SetServerWhitelistRequest) returns (google.protobuf.Empty);
+  rpc SetServerWhitelistEnforced(patchbukkit.server.SetServerWhitelistEnforcedRequest) returns (google.protobuf.Empty);
+  rpc SetServerIdleTimeout(patchbukkit.server.SetServerIdleTimeoutRequest) returns (google.protobuf.Empty);
+  rpc SetServerDefaultGamemode(patchbukkit.server.SetServerDefaultGamemodeRequest) returns (google.protobuf.Empty);
+
+  rpc GetServerTickInfo(patchbukkit.common.EmptyRequest) returns (patchbukkit.server.ServerTickInfoResponse);
+  rpc SetServerTickRate(patchbukkit.server.SetServerTickRateRequest) returns (google.protobuf.Empty);
+
+  rpc ShutdownServer(patchbukkit.server.ShutdownServerRequest) returns (google.protobuf.Empty);
+  rpc BroadcastMessage(patchbukkit.server.BroadcastMessageRequest) returns (google.protobuf.Empty);
+
+  rpc GetWhitelist(patchbukkit.common.EmptyRequest) returns (patchbukkit.server.GetWhitelistResponse);
+  rpc SetWhitelistPlayer(patchbukkit.server.SetWhitelistPlayerRequest) returns (google.protobuf.Empty);
+
+  rpc GetOperators(patchbukkit.common.EmptyRequest) returns (patchbukkit.server.GetOperatorsResponse);
+  rpc SetOperator(patchbukkit.server.SetOperatorRequest) returns (google.protobuf.Empty);
+
+  rpc GetBanList(patchbukkit.server.GetBanListRequest) returns (patchbukkit.server.GetBanListResponse);
+  rpc SetBanEntry(patchbukkit.server.SetBanEntryRequest) returns (google.protobuf.Empty);
+
+  rpc CreateWorld(patchbukkit.server.CreateWorldRequest) returns (patchbukkit.server.CreateWorldResponse);
+  rpc UnloadWorld(patchbukkit.server.UnloadWorldRequest) returns (patchbukkit.server.UnloadWorldResponse);
+  rpc SaveAllWorlds(patchbukkit.common.EmptyRequest) returns (google.protobuf.Empty);
+}
+

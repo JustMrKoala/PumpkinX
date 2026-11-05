@@ -1,0 +1,143 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message BrewEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  uint32 fuel_level = 4;
+}
+
+message BrewingStandFuelEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  uint32 fuel_power = 4;
+}
+
+message CraftItemEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string recipe_id = 2;
+}
+
+message FurnaceBurnEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string fuel_item = 4;
+  uint32 burn_time = 5;
+}
+
+message FurnaceExtractEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+  string item_id = 5;
+  uint32 item_amount = 6;
+  float exp_gained = 7;
+}
+
+message FurnaceSmeltEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string source_item = 4;
+  string result_item = 5;
+}
+
+message FurnaceStartSmeltEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  string source_item = 4;
+  uint32 cooking_time = 5;
+}
+
+message HopperInventorySearchEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  int32 search_pos_x = 4;
+  int32 search_pos_y = 5;
+  int32 search_pos_z = 6;
+}
+
+message InventoryCreativeEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  int32 slot = 2;
+  string item_id = 3;
+  uint32 item_count = 4;
+}
+
+message InventoryDragEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+}
+
+message InventoryInteractEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+}
+
+message InventoryMoveItemEvent {
+  int32 source_pos_x = 1;
+  int32 source_pos_y = 2;
+  int32 source_pos_z = 3;
+  int32 target_pos_x = 4;
+  int32 target_pos_y = 5;
+  int32 target_pos_z = 6;
+  string item_id = 7;
+  uint32 item_amount = 8;
+}
+
+message InventoryOpenEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+}
+
+message InventoryPickupItemEvent {
+  int32 block_x = 1;
+  int32 block_y = 2;
+  int32 block_z = 3;
+  int32 item_entity_id = 4;
+  string item_id = 5;
+}
+
+message PrepareAnvilEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string rename_text = 2;
+  uint32 repair_cost = 3;
+}
+
+message PrepareGrindstoneEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string result_item = 2;
+}
+
+message PrepareInventoryResultEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string result_item = 2;
+}
+
+message PrepareItemCraftEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string recipe_id = 2;
+}
+
+message PrepareSmithingEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string result_item = 2;
+}
+
+message SmithItemEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string recipe_id = 2;
+}
+
+message TradeSelectEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  uint32 slot_index = 2;
+}

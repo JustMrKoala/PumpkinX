@@ -1,0 +1,151 @@
+# Rust
+/rust/target/
+/target/
+**/target/
+**/*.rs.bk
+*.pdb
+
+# Rust resources
+rust/resources/jassets/*
+!rust/resources/jassets/.gitkeep
+
+# Gradle cache
+.gradle/
+java/.gradle/
+**/.gradle/
+.gradletasknamecache
+gradle-app.setting
+
+# Build outputs
+build/
+java/build/
+java/patchbukkit/build/
+java/patchbukkit/bin/
+java/protoc-gen-ffi/build/
+java/protoc-gen-ffi/bin/
+java/patchbukkit-test-plugin/build/
+java/patchbukkit-test-plugin/bin/
+!rust/build/
+!rust/build/**
+
+# Java compiled classes and JAR packages
+*.class
+*.jar
+*.war
+*.ear
+
+# Keep Gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+!java/gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!java/gradle/wrapper/gradle-wrapper.properties
+
+# Never ignore source build dirs if any exist
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Logs and Crash Reports
+*.log
+*.log.gz
+logs/
+**/logs/
+crash-reports/
+
+# Runtime and Test directories / artifacts
+patchbukkit/
+patchbukkit-plugins/
+patchbukkit-libs/
+libraries/
+java/patchbukkit/libraries/
+/plugins/
+java/patchbukkit/plugins/
+.paper/
+java/patchbukkit/.paper/
+cache/
+java/patchbukkit/cache/
+versions/
+java/patchbukkit/versions/
+run/
+**/run/
+world/
+world_nether/
+world_the_end/
+*.local.nbt
+# ...but these names also match the Java project dir, packages like
+# org/patchbukkit/world, and rust/tests/plugins, so re-include sources
+!/java/**/patchbukkit/
+!/java/*/src/**/
+!rust/tests/plugins/
+!rust/tests/plugins/**
+
+# Vanilla / Server runtime generated files
+server.properties
+bukkit.yml
+spigot.yml
+commands.yml
+help.yml
+permissions.yml
+eula.txt
+ops.json
+whitelist.json
+banned-ips.json
+banned-players.json
+usercache.json
+version_history.json
+.console_history
+
+# Runtime configs
+config/
+java/patchbukkit/config/
+
+# Examples
+examples/*/bin
+examples/*/run
+
+# IntelliJ IDEA
+.idea/
+java/.idea/
+**/.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated
+.springBeans
+.sts4-cache/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+**/.vscode/
+*.code-workspace
+
+# OS and Environment
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+desktop.ini
+*~
+*.swp
+*.swo
+.direnv/
+.env
+.env.*
+!*.example

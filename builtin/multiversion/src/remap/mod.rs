@@ -1,0 +1,17 @@
+pub mod argument_type_id_remap;
+pub mod attribute_id_remap;
+pub mod block_entity_type_id_remap;
+pub mod block_state_remap;
+pub mod custom_stat_id_remap;
+pub mod data_component_type_id_remap;
+pub mod enchantment_id_remap;
+pub mod entity_id_remap;
+pub mod environment_attribute_id_remap;
+pub mod item_id_remap;
+pub mod menu_id_remap;
+pub mod painting_variant_id_remap;
+pub mod particle_id_remap;
+pub mod recipe_serializer_id_remap;
+pub mod sign;
+pub mod slot_display_id_remap;
+pub mod sound_id_remap;

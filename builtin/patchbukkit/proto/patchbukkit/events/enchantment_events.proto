@@ -1,0 +1,25 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message EnchantItemEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string item_name = 2;
+  int32 item_count = 3;
+  int32 option = 4;
+  int32 exp_level_cost = 5;
+}
+
+message PrepareItemEnchantEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string item_name = 2;
+  int32 item_count = 3;
+  repeated int32 level_requirements = 4;
+  repeated int32 enchantment_id = 5;
+  repeated int32 enchantment_level = 6;
+  int32 bookshelf_count = 7;
+}

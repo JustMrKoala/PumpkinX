@@ -1,0 +1,131 @@
+# Main settings. Ops can change all of this in game too: type /myserver
+# (or whatever you set branding.command to) to open the admin menu.
+# Text everywhere accepts MiniMessage (<red>, <gradient:gold:yellow>, <bold>) and old style &a codes.
+# Use the admin command with reload after editing any file by hand.
+
+# Your server's identity. It replaces the plugin name everywhere players see it:
+# the chat prefix, menus, the sidebar, help and the admin command.
+# Use {server}, {server_name} and {server_address} in any message, sidebar line or format.
+branding:
+  name: MyServer
+  # Styled version for the chat prefix and {server}. Empty means the name in gold.
+  display: "<gold>MyServer"
+  address: play.example.com
+  # Command that opens the admin menu. Empty means the name in lower case (/myserver).
+  command: ""
+  command-aliases: []
+
+# Turn whole modules on or off. "auto" means: only when online-mode is false in server.properties.
+# Behind a Velocity or BungeeCord proxy that runs in online mode, set auth and skins to false.
+modules:
+  economy: true
+  shop: true
+  auctions: true
+  rewards: true
+  roles: true
+  chat: true
+  sidebar: true
+  auth: false
+  skins: auto
+  # Uses the Grim engine. Catches fly, speed, reach, killaura, timer and many more.
+  anticheat: true
+  # Uses the Orebfuscator engine. Hides ores from xray mods and texture packs.
+  antixray: true
+
+economy:
+  currency-singular: Coin
+  currency-plural: Coins
+  symbol: "$"
+  # {symbol}, {amount} and {currency} can be used. Example: "{amount} {currency}"
+  format: "{symbol}{amount}"
+  decimals: 2
+  starting-balance: 100
+  max-balance: 1000000000000
+  min-pay: 0.01
+  baltop-page-size: 10
+  # Lets other plugins (shops, jobs, crates) use this money through Vault.
+  vault-provider: true
+
+# The auction house (/ah). Players list the item in their hand with /ah sell <price>.
+auctions:
+  duration-hours: 48
+  # Taken from what the seller receives.
+  sales-tax-percent: 5
+  # Paid by the seller when listing, based on the price.
+  listing-fee-percent: 0
+  # Roles can get more with the permission keystone.ah.limit.<number>.
+  max-listings: 5
+  min-price: 1
+  max-price: 1000000000
+
+# Money for playing. Roles can multiply this with money-multiplier in roles.yml.
+rewards:
+  show-actionbar: true
+  survival-only: true
+  block-break:
+    COAL_ORE: 1
+    DEEPSLATE_COAL_ORE: 1
+    IRON_ORE: 2
+    DEEPSLATE_IRON_ORE: 2
+    GOLD_ORE: 3
+    DEEPSLATE_GOLD_ORE: 3
+    REDSTONE_ORE: 2
+    DEEPSLATE_REDSTONE_ORE: 2
+    LAPIS_ORE: 3
+    DEEPSLATE_LAPIS_ORE: 3
+    DIAMOND_ORE: 10
+    DEEPSLATE_DIAMOND_ORE: 10
+    EMERALD_ORE: 15
+    DEEPSLATE_EMERALD_ORE: 15
+    ANCIENT_DEBRIS: 25
+  mob-kill:
+    ZOMBIE: 2
+    SKELETON: 2
+    SPIDER: 2
+    CREEPER: 3
+    ENDERMAN: 5
+    WITCH: 5
+    BLAZE: 6
+    WITHER_SKELETON: 8
+    ENDER_DRAGON: 1000
+    WITHER: 500
+  playtime:
+    every-minutes: 15
+    amount: 50
+
+chat:
+  # {role_prefix}, {role_suffix}, {player} and every other placeholder work here.
+  # <message> is where the chat message goes. Roles can override this with chat-format.
+  format: "{role_prefix}<white>{player}</white>{role_suffix} <dark_gray>»</dark_gray> <gray><message>"
+
+roles:
+  # Show the role prefix in the tab list.
+  tab-names: true
+  tab-format: "{role_prefix}<white>{player}{role_suffix}"
+  # Show the role prefix above heads and sort tab by role priority.
+  nametags: true
+
+auth:
+  # Seconds a player has to log in before being kicked.
+  timeout-seconds: 60
+  max-attempts: 5
+  min-password-length: 6
+  max-password-length: 64
+  # Rejoining from the same IP within this many minutes logs you in automatically. 0 turns it off.
+  session-minutes: 30
+  blindness: true
+  max-accounts-per-ip: 3
+  # Commands people may use before logging in.
+  allowed-commands: [login, l, log, register, reg]
+
+skins:
+  # How long a looked up skin is kept before asking Mojang again.
+  cache-hours: 12
+
+# Anticheat and Anti Xray run on open source engines that Keystone installs and updates
+# from Modrinth (hash checked). They start after the next restart.
+protection:
+  auto-install: true
+
+data:
+  autosave-minutes: 5

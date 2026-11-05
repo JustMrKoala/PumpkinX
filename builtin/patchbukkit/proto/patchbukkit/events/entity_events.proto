@@ -1,0 +1,482 @@
+syntax = "proto3";
+package patchbukkit.events;
+
+import "patchbukkit/common/types.proto";
+
+option java_multiple_files = true;
+option java_package = "patchbukkit.events";
+
+message AreaEffectCloudApplyEvent {
+  int32 entity_id = 1;
+  repeated int32 affected_entities = 2;
+}
+
+message ArrowBodyCountChangeEvent {
+  int32 entity_id = 1;
+  uint32 old_amount = 2;
+  uint32 new_amount = 3;
+}
+
+message BatToggleSleepEvent {
+  int32 entity_id = 1;
+  bool is_awake = 2;
+}
+
+message CreatureSpawnEvent {
+  int32 entity_id = 1;
+  string entity_type = 2;
+  double pos_x = 3;
+  double pos_y = 4;
+  double pos_z = 5;
+  patchbukkit.common.UUID world_uuid = 6;
+  string spawn_reason = 7;
+}
+
+message CreeperPowerEvent {
+  int32 entity_id = 1;
+  string cause = 2;
+}
+
+message EnderDragonChangePhaseEvent {
+  int32 entity_id = 1;
+  string current_phase = 2;
+  string new_phase = 3;
+}
+
+message EntityAirChangeEvent {
+  int32 entity_id = 1;
+  int32 amount = 2;
+}
+
+message EntityBreakDoorEvent {
+  int32 entity_id = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+}
+
+message EntityBreedEvent {
+  int32 father_id = 1;
+  int32 mother_id = 2;
+  int32 child_id = 3;
+}
+
+message EntityChangeBlockEvent {
+  int32 entity_id = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+  string new_block = 5;
+}
+
+message EntityCombustEvent {
+  int32 entity_id = 1;
+  float duration_secs = 2;
+}
+
+message EntityCombustByBlockEvent {
+  int32 entity_id = 1;
+  int32 combuster_x = 2;
+  int32 combuster_y = 3;
+  int32 combuster_z = 4;
+  float duration = 5;
+}
+
+message EntityCombustByEntityEvent {
+  int32 entity_id = 1;
+  int32 combuster_id = 2;
+  float duration = 3;
+}
+
+message EntityDamageEvent {
+  int32 entity_id = 1;
+  float damage = 2;
+  string damage_type = 3;
+}
+
+message EntityDamageByBlockEvent {
+  int32 entity_id = 1;
+  int32 damager_pos_x = 2;
+  int32 damager_pos_y = 3;
+  int32 damager_pos_z = 4;
+  float damage = 5;
+  string cause = 6;
+}
+
+message EntityDamageByEntityEvent {
+  int32 entity_id = 1;
+  int32 damager_id = 2;
+  float damage = 3;
+  string cause = 4;
+}
+
+message EntityDeathEvent {
+  int32 entity_id = 1;
+  int32 dropped_exp = 2;
+}
+
+message PlayerDeathEvent {
+  patchbukkit.common.UUID player_uuid = 1;
+  string death_message = 2;
+  int32 dropped_exp = 3;
+  bool keep_inventory = 4;
+}
+
+message EntityDismountEvent {
+  int32 entity_id = 1;
+  int32 dismounted_id = 2;
+}
+
+message EntityDropItemEvent {
+  int32 entity_id = 1;
+  string item_name = 2;
+  uint32 count = 3;
+}
+
+message EntityDyeEvent {
+  int32 entity_id = 1;
+  string color = 2;
+  patchbukkit.common.UUID player_uuid = 3;
+}
+
+message EntityEnterBlockEvent {
+  int32 entity_id = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+}
+
+message EntityEnterLoveModeEvent {
+  int32 entity_id = 1;
+  int32 ticks_in_love = 2;
+}
+
+message EntityExhaustionEvent {
+  int32 entity_id = 1;
+  float exhaustion = 2;
+}
+
+message EntityExplodeEvent {
+  int32 entity_id = 1;
+  double pos_x = 2;
+  double pos_y = 3;
+  double pos_z = 4;
+  float yield_rate = 5;
+}
+
+message EntityInteractEvent {
+  int32 entity_id = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+}
+
+message EntityKnockbackEvent {
+  int32 entity_id = 1;
+  double knockback_x = 2;
+  double knockback_y = 3;
+  double knockback_z = 4;
+}
+
+message EntityKnockbackByEntityEvent {
+  int32 entity_id = 1;
+  int32 hit_by_id = 2;
+  double force = 3;
+  double x = 4;
+  double z = 5;
+}
+
+message EntityMountEvent {
+  int32 entity_id = 1;
+  int32 mount_id = 2;
+}
+
+message EntityPickupItemEvent {
+  int32 entity_id = 1;
+  string item_name = 2;
+  uint32 count = 3;
+}
+
+message EntityPlaceEvent {
+  int32 entity_id = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+  string block_name = 5;
+}
+
+message EntityPortalEvent {
+  int32 entity_id = 1;
+  int32 portal_pos_x = 2;
+  int32 portal_pos_y = 3;
+  int32 portal_pos_z = 4;
+}
+
+message EntityPortalEnterEvent {
+  int32 entity_id = 1;
+  int32 location_x = 2;
+  int32 location_y = 3;
+  int32 location_z = 4;
+}
+
+message EntityPortalExitEvent {
+  int32 entity_id = 1;
+  int32 from_pos_x = 2;
+  int32 from_pos_y = 3;
+  int32 from_pos_z = 4;
+  int32 to_pos_x = 5;
+  int32 to_pos_y = 6;
+  int32 to_pos_z = 7;
+}
+
+message EntityPoseChangeEvent {
+  int32 entity_id = 1;
+  string pose = 2;
+}
+
+message EntityPotionEffectEvent {
+  int32 entity_id = 1;
+  string effect_name = 2;
+  int32 duration = 3;
+  uint32 amplifier = 4;
+}
+
+message EntityRegainHealthEvent {
+  int32 entity_id = 1;
+  float amount = 2;
+}
+
+message EntityRemoveEvent {
+  int32 entity_id = 1;
+  string cause = 2;
+}
+
+message EntityResurrectEvent {
+  int32 entity_id = 1;
+}
+
+message EntityShootBowEvent {
+  int32 entity_id = 1;
+  string weapon_name = 2;
+  float force = 3;
+}
+
+message EntitySpawnEvent {
+  int32 entity_id = 1;
+  string entity_type = 2;
+  double pos_x = 3;
+  double pos_y = 4;
+  double pos_z = 5;
+  patchbukkit.common.UUID world_uuid = 6;
+}
+
+message EntitySpellCastEvent {
+  int32 entity_id = 1;
+  string spell = 2;
+}
+
+message EntityTameEvent {
+  int32 entity_id = 1;
+  patchbukkit.common.UUID owner_uuid = 2;
+}
+
+message EntityTargetEvent {
+  int32 entity_id = 1;
+}
+
+message EntityTargetBlockEvent {
+  int32 entity_id = 1;
+  int32 block_x = 2;
+  int32 block_y = 3;
+  int32 block_z = 4;
+}
+
+message EntityTargetLivingEntityEvent {
+  int32 entity_id = 1;
+  string reason = 2;
+}
+
+message EntityTeleportEvent {
+  int32 entity_id = 1;
+  double from_position_x = 2;
+  double from_position_y = 3;
+  double from_position_z = 4;
+  double to_position_x = 5;
+  double to_position_y = 6;
+  double to_position_z = 7;
+}
+
+message EntityToggleGlideEvent {
+  int32 entity_id = 1;
+  bool is_gliding = 2;
+}
+
+message EntityToggleSwimEvent {
+  int32 entity_id = 1;
+  bool is_swimming = 2;
+}
+
+message EntityTransformEvent {
+  int32 entity_id = 1;
+  int32 new_entity_id = 2;
+  string transform_reason = 3;
+}
+
+message EntityUnleashEvent {
+  int32 entity_id = 1;
+  string reason = 2;
+}
+
+message ExpBottleEvent {
+  int32 entity_id = 1;
+  int32 experience = 2;
+  int32 location_x = 3;
+  int32 location_y = 4;
+  int32 location_z = 5;
+  bool show_effect = 6;
+}
+
+message ExplosionPrimeEvent {
+  int32 entity_id = 1;
+  float radius = 2;
+  bool fire = 3;
+}
+
+message FireworkExplodeEvent {
+  int32 entity_id = 1;
+}
+
+message FoodLevelChangeEvent {
+  int32 entity_id = 1;
+  uint32 food_level = 2;
+}
+
+message HorseJumpEvent {
+  int32 entity_id = 1;
+  float power = 2;
+}
+
+message ItemDespawnEvent {
+  int32 entity_id = 1;
+}
+
+message ItemMergeEvent {
+  int32 entity_id = 1;
+  int32 target_id = 2;
+}
+
+message ItemSpawnEvent {
+  int32 entity_id = 1;
+  double pos_x = 2;
+  double pos_y = 3;
+  double pos_z = 4;
+  string item_name = 5;
+}
+
+message LingeringPotionSplashEvent {
+  int32 entity_id = 1;
+  int32 location_x = 2;
+  int32 location_y = 3;
+  int32 location_z = 4;
+  string potion_item = 5;
+}
+
+message PigZapEvent {
+  int32 entity_id = 1;
+  int32 lightning_id = 2;
+  int32 pig_zombie_id = 3;
+}
+
+message PigZombieAngerEvent {
+  int32 entity_id = 1;
+  int32 new_anger = 2;
+}
+
+message PiglinBarterEvent {
+  int32 entity_id = 1;
+  string input_item_name = 2;
+  int32 input_item_count = 3;
+  repeated string outcome_names = 4;
+}
+
+message PotionSplashEvent {
+  int32 entity_id = 1;
+  int32 location_x = 2;
+  int32 location_y = 3;
+  int32 location_z = 4;
+  string potion_item = 5;
+  repeated int32 affected_entities = 6;
+}
+
+message ProjectileHitEvent {
+  int32 entity_id = 1;
+  double hit_position_x = 2;
+  double hit_position_y = 3;
+  double hit_position_z = 4;
+}
+
+message ProjectileLaunchEvent {
+  int32 entity_id = 1;
+}
+
+message SheepDyeWoolEvent {
+  int32 entity_id = 1;
+  uint32 dye_color = 2;
+}
+
+message SheepRegrowWoolEvent {
+  int32 entity_id = 1;
+}
+
+message SlimeSplitEvent {
+  int32 entity_id = 1;
+  int32 count = 2;
+}
+
+message SpawnerSpawnEvent {
+  int32 entity_id = 1;
+  int32 spawner_pos_x = 2;
+  int32 spawner_pos_y = 3;
+  int32 spawner_pos_z = 4;
+}
+
+message StriderTemperatureChangeEvent {
+  int32 entity_id = 1;
+  bool is_shivering = 2;
+}
+
+message TrialSpawnerSpawnEvent {
+  int32 entity_id = 1;
+  int32 spawner_pos_x = 2;
+  int32 spawner_pos_y = 3;
+  int32 spawner_pos_z = 4;
+}
+
+message VillagerAcquireTradeEvent {
+  int32 entity_id = 1;
+  int32 recipe_index = 2;
+}
+
+message VillagerCareerChangeEvent {
+  int32 entity_id = 1;
+  string profession = 2;
+  string reason = 3;
+}
+
+message VillagerReplenishTradeEvent {
+  int32 entity_id = 1;
+  int32 restock_quantity = 2;
+}
+
+message VillagerReputationChangeEvent {
+  int32 entity_id = 1;
+  int32 target_id = 2;
+  int32 reputation_change = 3;
+}
+
+message WardenAngerChangeEvent {
+  int32 entity_id = 1;
+  int32 target_id = 2;
+  int32 old_anger = 3;
+  int32 new_anger = 4;
+}
