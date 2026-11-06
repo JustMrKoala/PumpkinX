@@ -69,6 +69,7 @@ pub fn write_chunk_data(
     }
     drop(heightmaps);
 
+    let mut culled_sections = Vec::new();
     {
         let mut blocks_and_biomes_buf = Vec::new();
         let block_sections = chunk
@@ -84,7 +85,17 @@ pub fn write_chunk_data(
 
         let mut zero_bytes_count = 0;
 
-        for (block_palette, biome_palette) in block_sections.iter().zip(biome_sections.iter()) {
+        if crate::pumpkinx::server_culling() {
+            culled_sections = crate::world::culling::mask_sections(&block_sections);
+        }
+
+        for (index, (block_palette, biome_palette)) in
+            block_sections.iter().zip(biome_sections.iter()).enumerate()
+        {
+            let block_palette = culled_sections
+                .get(index)
+                .and_then(Option::as_ref)
+                .unwrap_or(block_palette);
             let non_empty_block_count = block_palette.non_air_block_count() as i16;
             blocks_and_biomes_buf.write_i16_be(non_empty_block_count)?;
             if version >= &JavaMinecraftVersion::V_26_1 {
@@ -184,8 +195,21 @@ pub fn write_chunk_data(
         .pending_block_entities
         .lock()
         .map_err(|_| WritingError::Message("block_entities lock poisoned".into()))?;
-    write.write_var_int(&VarInt(block_entities.len() as i32))?;
-    for (pos, nbt) in block_entities.iter() {
+    // A block entity on a hidden block would give away what is there.
+    let is_sent = |pos: &pumpkin_util::math::position::BlockPos| {
+        let section = (pos.0.y - chunk.section.min_y).div_euclid(16) as usize;
+        culled_sections.get(section).and_then(Option::as_ref).is_none_or(|palette| {
+            let block = palette.get(
+                get_local_cord(pos.0.x) as usize & 0xF,
+                pos.0.y.rem_euclid(16) as usize,
+                get_local_cord(pos.0.z) as usize & 0xF,
+            );
+            block.to_state().block_entity_type != u16::MAX
+        })
+    };
+    let sent_count = block_entities.keys().filter(|pos| is_sent(pos)).count();
+    write.write_var_int(&VarInt(sent_count as i32))?;
+    for (pos, nbt) in block_entities.iter().filter(|(pos, _)| is_sent(pos)) {
         let local_xz = ((get_local_cord(pos.0.x) & 0xF) << 4) | (get_local_cord(pos.0.z) & 0xF);
 
         write.write_u8(local_xz as u8)?;

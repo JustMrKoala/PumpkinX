@@ -43,6 +43,7 @@ impl PumpkinX {
 
     /// Hooks that must exist before players connect.
     pub fn on_server_created(&self, server: &Arc<Server>) {
+        pumpkin_core::pumpkinx::set_server_culling(self.running.culling.enabled);
         let explosions = &self.running.explosions;
         pumpkin_core::pumpkinx::set_chain_explosions(
             if explosions.merge_chains {

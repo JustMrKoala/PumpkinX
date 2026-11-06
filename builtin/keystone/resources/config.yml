@@ -27,10 +27,6 @@ modules:
   sidebar: true
   auth: false
   skins: auto
-  # Uses the Grim engine. Catches fly, speed, reach, killaura, timer and many more.
-  anticheat: true
-  # Uses the Orebfuscator engine. Hides ores from xray mods and texture packs.
-  antixray: true
 
 economy:
   currency-singular: Coin
@@ -121,11 +117,6 @@ auth:
 skins:
   # How long a looked up skin is kept before asking Mojang again.
   cache-hours: 12
-
-# Anticheat and Anti Xray run on open source engines that Keystone installs and updates
-# from Modrinth (hash checked). They start after the next restart.
-protection:
-  auto-install: true
 
 data:
   autosave-minutes: 5

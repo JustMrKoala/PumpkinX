@@ -58,6 +58,38 @@ min_tnt = 64          # smallest cluster that gets merged
 tick_budget_ms = 10   # share of each 50 ms tick a blast may use
 ```
 
+## Server culling
+
+Very experimental and off by default. Turn it on in the dashboard settings, or in `pumpkinx.toml`:
+
+```toml
+[culling]
+enabled = false
+```
+
+The server sends players only what they could see, which takes the use out of xray and ESP clients.
+
+Blocks: when a chunk is sent, blocks fully enclosed by other blocks are replaced by the most common solid block of their section. Ores and block entities that are buried never reach the client. When a block is broken, its neighbours are sent, so a player only learns what is uncovered. At chunk edges ordinary blocks stay as they are, and only valuables are hidden.
+
+Entities: other players and mobs are hidden while a straight line to them is blocked. They stay visible within 16 blocks, sight is checked every 5 ticks, and an entity only disappears after 3 misses in a row. Spectators see everything.
+
+Measured on one Windows machine, 450 generated chunks at view distance 10:
+
+| | Off | On |
+| --- | --- | --- |
+| Chunk block data after compression | 2.69 MB | 1.69 MB |
+| Entities sent to a bot in 40 seconds | 606 | 77 |
+| Extra CPU per chunk | none | about 1.3 ms |
+
+This mainly saves bandwidth and hides information. The server still loads and simulates the same chunks, and masking costs CPU time on a worker thread each time a chunk is sent. The entity count depends heavily on the terrain.
+
+Limits:
+
+* Only clients on the current version are masked. Older Java clients through multiversion and Bedrock clients still get real chunks. Entity hiding was tested on an older Java client, not on Bedrock.
+* A block changed while players are nearby is sent as usual, even when it is buried.
+* Sounds and particles can still give things away.
+* A client may show the filler block briefly when a block breaks, until the neighbour update arrives.
+
 ## Building
 
 Needs Rust stable, and for PatchBukkit a JDK 25 (Gradle builds the Java bridge).

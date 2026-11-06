@@ -296,7 +296,6 @@ fn modules(parent: Option<Builder>) -> Builder {
         module("sidebar", "Sidebar", "oak_sign", false, "Scoreboard on the right"),
         module("auth", "Login", "iron_door", true, "/register and /login"),
         module("skins", "Skins", "player_head", true, "Premium skins on offline mode"),
-        info("barrier", "<gray>Anticheat and Anti Xray", &["<gray>Only on Purpur and Paper servers.".into(), "<gray>Pumpkin has no plugins for these yet.".into()]),
     ]))
 }
 

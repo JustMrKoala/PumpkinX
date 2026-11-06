@@ -23,6 +23,7 @@ use tracing::{debug, error, info, trace, warn};
 mod active_chunks;
 pub mod brightness;
 pub mod chunker;
+pub mod culling;
 mod entity_index;
 pub(crate) use entity_index::EntityIndex;
 pub mod entity_islands;
@@ -1818,6 +1819,9 @@ impl World {
         new_state: BlockStateId,
     ) {
         self.register_block_change(*position, new_state);
+        if culling::opens_up(old_state, new_state) {
+            culling::reveal_around(self, *position);
+        }
         // Extracted collision lists are canonical VoxelShape.toAabbs() geometry.
         if old_state.to_state().collision_shapes == new_state.to_state().collision_shapes {
             return;

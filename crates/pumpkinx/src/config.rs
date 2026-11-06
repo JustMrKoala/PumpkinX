@@ -17,6 +17,7 @@ pub struct PumpkinXConfig {
     pub patchbukkit: PatchBukkitConfig,
     pub keystone: KeystoneConfig,
     pub explosions: ExplosionsConfig,
+    pub culling: CullingConfig,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -63,6 +64,14 @@ impl Default for KeystoneConfig {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct CullingConfig {
+    /// Experimental. Hides buried blocks and out of sight players and mobs from clients,
+    /// against xray and ESP. Only covers 26.3 Java clients.
+    pub enabled: bool,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ExplosionsConfig {
@@ -101,6 +110,7 @@ impl Default for PumpkinXConfig {
             patchbukkit: PatchBukkitConfig::default(),
             keystone: KeystoneConfig::default(),
             explosions: ExplosionsConfig::default(),
+            culling: CullingConfig::default(),
         }
     }
 }

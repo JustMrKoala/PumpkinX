@@ -498,6 +498,7 @@ async function loadFeatures() {
   featureConfig = cfg;
   $("#f-multiversion").checked = cfg.multiversion.enabled;
   $("#f-patchbukkit").checked = cfg.patchbukkit.enabled;
+  $("#f-culling").checked = cfg.culling.enabled;
   $("#f-keystone").checked = cfg.keystone.enabled;
   $("#f-keystone").disabled = !s.keystone.embedded;
   $("#ks-state").textContent = !s.keystone.embedded ? "This build was made without Keystone." : s.keystone.running ? "Running now." : "Not running.";
@@ -522,6 +523,7 @@ $("#features-save").addEventListener("click", async () => {
   const cfg = structuredClone(featureConfig);
   cfg.multiversion.enabled = $("#f-multiversion").checked;
   cfg.patchbukkit.enabled = $("#f-patchbukkit").checked;
+  cfg.culling.enabled = $("#f-culling").checked;
   cfg.keystone.enabled = $("#f-keystone").checked;
   cfg.dashboard.enabled = $("#f-dashboard").checked;
   cfg.dashboard.address = $("#f-address").value.trim();

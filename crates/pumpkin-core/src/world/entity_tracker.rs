@@ -1,3 +1,4 @@
+use super::culling;
 use std::sync::atomic::{
     AtomicBool, AtomicU32,
     Ordering::{self, Relaxed},
@@ -81,6 +82,8 @@ pub struct TrackedEntity {
     bedrock_pos: AtomicCell<Vector3<f64>>,
     /// Packed pitch, yaw, head yaw.
     bedrock_rot: AtomicCell<[u8; 3]>,
+    /// Server culling: failed line of sight checks in a row, per viewer.
+    sight_misses: std::sync::Mutex<rustc_hash::FxHashMap<Uuid, u8>>,
 }
 
 impl TrackedEntity {
@@ -127,6 +130,7 @@ impl TrackedEntity {
             was_riding: AtomicBool::new(false),
             bedrock_pos: AtomicCell::new(bedrock_pos),
             bedrock_rot: AtomicCell::new(rot),
+            sight_misses: std::sync::Mutex::default(),
         }
     }
 
@@ -445,7 +449,8 @@ impl TrackedEntity {
                 .chunk_sender
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .is_chunk_ready(&entity_chunk);
+                .is_chunk_ready(&entity_chunk)
+            && self.passes_culling(player);
 
         if is_visible {
             let inserted = self
@@ -462,6 +467,54 @@ impl TrackedEntity {
         } else {
             self.remove_player(player);
         }
+    }
+
+    /// Server culling: whether `player` has a line of sight to this entity.
+    fn passes_culling(&self, player: &Player) -> bool {
+        if !crate::pumpkinx::server_culling() || !self.is_cullable() {
+            return true;
+        }
+        let viewer = player.get_entity();
+        let entity = self.entity.get_entity();
+        let eye = viewer.get_eye_pos();
+        let pos = entity.pos.load();
+        let close = culling::ALWAYS_VISIBLE_DISTANCE * culling::ALWAYS_VISIBLE_DISTANCE;
+        let height = f64::from(entity.entity_type.dimension[1]);
+        let in_sight = player.gamemode.load() == GameMode::Spectator
+            || eye.squared_distance_to_vec(&pos) <= close
+            || [1.0, 0.5, 0.1].iter().any(|share| {
+                let target = Vector3::new(pos.x, height.mul_add(*share, pos.y), pos.z);
+                culling::has_line_of_sight(&entity.world.load(), eye, target)
+            });
+
+        let mut misses = self
+            .sight_misses
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if in_sight {
+            misses.remove(&player.gameprofile.id);
+            return true;
+        }
+        let count = misses.entry(player.gameprofile.id).or_default();
+        *count = count.saturating_add(1);
+        *count < culling::MISSES_BEFORE_HIDING && self.is_seen_by(&player.gameprofile.id)
+    }
+
+    /// Only players and mobs, and nothing riding or carrying, which must stay paired.
+    fn is_cullable(&self) -> bool {
+        let is_living = self.entity.get_player().is_some() || self.entity.get_mob().is_some();
+        let entity = self.entity.get_entity();
+        is_living
+            && entity
+                .vehicle
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .is_none()
+            && entity
+                .passengers
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .is_empty()
     }
 
     pub fn update_players(&self, players: &[Arc<Player>], _world: &World) {
@@ -997,6 +1050,7 @@ impl TrackedEntity {
 
 pub struct EntityTracker {
     pub entity_map: DashMap<i32, Arc<TrackedEntity>>,
+    culling_ticks: AtomicU32,
 }
 
 impl Default for EntityTracker {
@@ -1010,6 +1064,7 @@ impl EntityTracker {
     pub fn new() -> Self {
         Self {
             entity_map: DashMap::new(),
+            culling_ticks: AtomicU32::new(0),
         }
     }
 
@@ -1185,6 +1240,20 @@ impl EntityTracker {
         if !moved_players.is_empty() {
             for entry in &self.entity_map {
                 entry.value().update_players(&moved_players, world);
+            }
+        }
+
+        // Sight changes without anyone crossing a section border.
+        if crate::pumpkinx::server_culling()
+            && self
+                .culling_ticks
+                .fetch_add(1, Relaxed)
+                .is_multiple_of(culling::CHECK_INTERVAL)
+        {
+            for entry in &self.entity_map {
+                if entry.value().is_cullable() {
+                    entry.value().update_players(players.as_ref(), world);
+                }
             }
         }
 

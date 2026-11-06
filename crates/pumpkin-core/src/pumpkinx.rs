@@ -45,6 +45,18 @@ pub fn accepts_protocol(protocol: i32) -> bool {
             .is_ok_and(|p| JavaMinecraftVersion::from_protocol(p) != JavaMinecraftVersion::Unknown)
 }
 
+static SERVER_CULLING: AtomicBool = AtomicBool::new(false);
+
+/// Hides buried blocks and out of sight entities from clients.
+pub fn set_server_culling(enabled: bool) {
+    SERVER_CULLING.store(enabled, Ordering::Release);
+}
+
+#[must_use]
+pub fn server_culling() -> bool {
+    SERVER_CULLING.load(Ordering::Acquire)
+}
+
 static CHAIN_MIN_TNT: AtomicU32 = AtomicU32::new(0);
 static CHAIN_TICK_BUDGET_MS: AtomicU32 = AtomicU32::new(10);
 

@@ -210,7 +210,7 @@ impl<V: Hash + Eq + Copy + Default, const DIM: usize> PalettedContainer<V, DIM> 
 
     /// Builds a complete palette without paying the bookkeeping cost of individual mutations.
     #[expect(clippy::too_many_lines)]
-    pub(crate) fn from_fn(mut value_at: impl FnMut(usize, usize, usize) -> V) -> Self {
+    pub fn from_fn(mut value_at: impl FnMut(usize, usize, usize) -> V) -> Self {
         let first = value_at(0, 0, 0);
         let mut first_count: u16 = 1;
         let mut first_diff = None;
