@@ -86,7 +86,14 @@ pub fn write_chunk_data(
         let mut zero_bytes_count = 0;
 
         if crate::pumpkinx::server_culling() {
-            culled_sections = crate::world::culling::mask_sections(&block_sections);
+            let masked = crate::world::culling::mask_sections(&block_sections);
+            culled_sections = masked.sections;
+            *chunk
+                .section
+                .culled_valuables
+                .write()
+                .map_err(|_| WritingError::Message("culled_valuables lock poisoned".into()))? =
+                masked.valuables.into();
         }
 
         for (index, (block_palette, biome_palette)) in

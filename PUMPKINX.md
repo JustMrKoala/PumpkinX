@@ -80,6 +80,8 @@ The server sends players only what they could see, which takes the use out of xr
 
 Blocks: when a chunk is sent, blocks fully enclosed by other blocks are replaced by the most common solid block of their section. Ores and block entities that are buried never reach the client. When a block is broken, its neighbours are sent, so a player only learns what is uncovered. At chunk edges ordinary blocks stay as they are, and only valuables are hidden.
 
+Valuables (ores, ancient debris and block entities such as chests and spawners) that touch a cave are hidden as well: solid ones turn into the filler block and others, like chests, into air. Each player gets the real block once they are within 32 blocks and have a clear line to it, or within 6 blocks of it in any case. This is checked every 5 ticks, for at most 256 blocks per player per check. Valuables with open sky above them are always sent, so villages and surface builds look normal from afar. A block stays real for that client until its chunk is sent again.
+
 Entities: other players and mobs are hidden while a straight line to them is blocked. They stay visible within 16 blocks, sight is checked every 5 ticks, and an entity only disappears after 3 misses in a row. Spectators see everything.
 
 Measured on one Windows machine, 450 generated chunks at view distance 10:
@@ -89,6 +91,7 @@ Measured on one Windows machine, 450 generated chunks at view distance 10:
 | Chunk block data after compression | 2.69 MB | 1.69 MB |
 | Entities sent to a bot in 40 seconds | 606 | 77 |
 | Extra CPU per chunk | none | about 1.3 ms |
+| Reveal check per player, every 5 ticks | none | under 0.1 ms on average, 2 ms at worst |
 
 This mainly saves bandwidth and hides information. The server still loads and simulates the same chunks, and masking costs CPU time on a worker thread each time a chunk is sent. The entity count depends heavily on the terrain.
 
@@ -97,6 +100,9 @@ Limits:
 * Only clients on the current version are masked. Older Java clients through multiversion and Bedrock clients still get real chunks. Entity hiding was tested on an older Java client, not on Bedrock.
 * A block changed while players are nearby is sent as usual, even when it is buried.
 * Sounds and particles can still give things away.
+* Xray still shows valuables a player is close to, or could see from where they stand.
+* Ores on cave walls and chests under a roof can pop in as a player gets close or turns a corner. Further than 32 blocks away they are not shown, even in plain sight.
+* A broken block sends its neighbours to everyone watching that chunk, not only to the player who broke it.
 * A client may show the filler block briefly when a block breaks, until the neighbour update arrives.
 
 ## Building

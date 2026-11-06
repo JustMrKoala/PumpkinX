@@ -3284,6 +3284,7 @@ impl Player {
             }
         }
         self.tick_counter.fetch_add(1, Ordering::Relaxed);
+        crate::world::culling::tick_player(self);
         self.living_entity
             .entity
             .tick_count

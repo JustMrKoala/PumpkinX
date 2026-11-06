@@ -110,6 +110,9 @@ pub struct ChunkSections {
     pub randomly_ticking_mask: std::sync::atomic::AtomicU32,
     pub biome_sections: RwLock<Box<[BiomePalette]>>,
     pub min_y: i32,
+    /// Server culling: the blocks a client only gets once it can see them, as
+    /// `section * 4096 + (y * 16 + z) * 16 + x`. Written each time the chunk is masked.
+    pub culled_valuables: RwLock<std::sync::Arc<[u32]>>,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -350,6 +353,7 @@ impl ChunkSections {
             randomly_ticking_mask: std::sync::atomic::AtomicU32::new(randomly_ticking_mask),
             biome_sections: RwLock::new(biome_sections),
             min_y,
+            culled_valuables: RwLock::default(),
         }
     }
 
@@ -375,6 +379,7 @@ impl ChunkSections {
             randomly_ticking_mask: std::sync::atomic::AtomicU32::new(randomly_ticking_mask),
             biome_sections: RwLock::new(biome_sections),
             min_y,
+            culled_valuables: RwLock::default(),
         }
     }
 

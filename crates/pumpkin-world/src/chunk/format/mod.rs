@@ -388,6 +388,7 @@ impl ChunkData {
             randomly_ticking_mask: std::sync::atomic::AtomicU32::new(randomly_ticking_mask),
             biome_sections: RwLock::new(biome_palettes.into_boxed_slice()),
             min_y,
+            culled_valuables: RwLock::default(),
         };
 
         let heightmaps = root_tag.get_compound("Heightmaps").map_or(
@@ -1001,6 +1002,7 @@ impl ChunkData {
             randomly_ticking_mask: std::sync::atomic::AtomicU32::new(randomly_ticking_mask),
             biome_sections: RwLock::new(biome_palettes.into_boxed_slice()),
             min_y,
+            culled_valuables: RwLock::default(),
         };
         let light_engine = ChunkLight {
             block_light: block_lights.into_boxed_slice(),

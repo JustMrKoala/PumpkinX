@@ -10,6 +10,7 @@ use pumpkin_protocol::codec::var_int::VarInt;
 use pumpkin_protocol::java::client::play::{CChunkBatchEnd, CChunkBatchStart, CUnloadChunk};
 use pumpkin_protocol::ser::NetworkWriteExt;
 use pumpkin_protocol::{ClientPacket, MultiVersionJavaPacket};
+use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::math::vector2::Vector2;
 use pumpkin_util::version::JavaMinecraftVersion;
 use pumpkin_world::chunk::ChunkData;
@@ -72,6 +73,8 @@ pub struct ChunkSender {
     pub desired_rate: f32,
     pub send_quota: f32,
     pub max_in_flight: u16,
+    /// Server culling: hidden blocks this client is done with, until its chunk is sent again.
+    settled_blocks: FxHashMap<Vector2<i32>, FxHashSet<BlockPos>>,
 }
 
 impl ChunkSender {
@@ -86,6 +89,7 @@ impl ChunkSender {
             desired_rate: INITIAL_CHUNKS_PER_TICK,
             send_quota: 0.0,
             max_in_flight: 1,
+            settled_blocks: FxHashMap::default(),
         }
     }
 
@@ -93,6 +97,7 @@ impl ChunkSender {
         self.pending_chunks.clear();
         self.sent_chunks.clear();
         self.awaiting_delivery.clear();
+        self.settled_blocks.clear();
         self.in_flight_batches = 0;
         self.send_quota = 0.0;
     }
@@ -120,6 +125,18 @@ impl ChunkSender {
             }
         }
         delivered
+    }
+
+    /// Whether server culling has nothing left to do for this block.
+    #[must_use]
+    pub fn is_block_settled(&self, chunk: &Vector2<i32>, pos: &BlockPos) -> bool {
+        self.settled_blocks
+            .get(chunk)
+            .is_some_and(|blocks| blocks.contains(pos))
+    }
+
+    pub fn settle_block(&mut self, chunk: Vector2<i32>, pos: BlockPos) {
+        self.settled_blocks.entry(chunk).or_default().insert(pos);
     }
 
     #[must_use]
@@ -162,6 +179,7 @@ impl ChunkSender {
 
     pub fn unload_chunk(&mut self, client: &ClientPlatform, pos: Vector2<i32>) {
         self.pending_chunks.remove(&pos);
+        self.settled_blocks.remove(&pos);
         self.awaiting_delivery.remove(&pos);
         if self.sent_chunks.remove(&pos)
             && let ClientPlatform::Java(java_client) = client
@@ -359,6 +377,7 @@ impl ChunkSender {
             client.try_enqueue_packet(chunk.payload.clone());
 
             self.pending_chunks.remove(&chunk.position);
+            self.settled_blocks.remove(&chunk.position);
             self.sent_chunks.insert(chunk.position);
             dispatched_positions.push(chunk.position);
         }
