@@ -143,13 +143,7 @@ Every account can upload a plugin, which runs as code on the machine. On Linux t
 
 ## Remote access
 
-The dashboard is published through a Cloudflare tunnel by the `pumpkinx-tunnel` systemd service. It is a quick tunnel, so the address changes whenever the service restarts:
-
-```bash
-sudo journalctl -u pumpkinx-tunnel | grep -o 'https://[a-z0-9-]*\.trycloudflare\.com' | tail -1
-```
-
-For a fixed address, use a named tunnel on a domain in your Cloudflare account, ideally with Cloudflare Access in front. The console polls `/api/logs` because quick tunnels don't pass server-sent events. The token only travels in the `Authorization` header, never in a URL.
+The dashboard is published through a named Cloudflare tunnel, managed with `tunnelkeeper` and running as the `tunnelkeeper-pumpkinx` service, so its address stays the same. Consider Cloudflare Access in front of it. The console polls `/api/logs` because Cloudflare quick tunnels don't pass server-sent events. The token only travels in the `Authorization` header, never in a URL.
 
 ## Third-party code
 

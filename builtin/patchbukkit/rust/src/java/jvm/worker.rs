@@ -521,6 +521,8 @@ impl JvmWorker {
         let mut builder = InitArgsBuilder::new()
             .version(JNIVersion::V21)
             .option(format!("-Djava.class.path={classpath}"))
+            // Without this the JVM takes SIGTERM and exits on the spot, skipping the world save.
+            .option("-Xrs")
             .option("-XX:+IgnoreUnrecognizedVMOptions")
             .option("-XX:+EnableDynamicAgentLoading")
             .option("-XX:+StartAttachListener")
