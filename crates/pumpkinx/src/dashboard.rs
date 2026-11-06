@@ -436,7 +436,13 @@ async fn put_icon(State(state): State<AppState>, body: Bytes) -> ApiResult {
     fs::write(state.px.dir.join(ICON_FILE), &body)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     fs::write(&path, text).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    Ok(Json(json!({ "ok": true, "restart_required": true })))
+    state
+        .server
+        .get_status()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .set_favicon(&body);
+    Ok(Json(json!({ "ok": true, "restart_required": false })))
 }
 
 async fn stop() -> ApiResult {

@@ -444,9 +444,7 @@ $("#profile-icon-input").addEventListener("change", async (e) => {
     $("#profile-icon").src = URL.createObjectURL(png);
     state.settings = null;
     await loadSettings();
-    state.restartPending = true;
-    $("#restart-banner").classList.remove("hidden");
-    toast("Icon saved");
+    toast("Icon saved. Refresh the server list to see it");
   } catch (err) { toast("Couldn't use that image: " + err.message, true); }
 });
 

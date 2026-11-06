@@ -12,7 +12,7 @@ use std::{fs, path::Path};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
-const DEFAULT_ICON: &[u8] = include_bytes!("../../../../assets/default_icon.png");
+const DEFAULT_ICON: &[u8] = include_bytes!("../../../../assets/pumpkinx_icon.png");
 const MAX_SAMPLE_PLAYERS: usize = 12;
 
 fn load_icon_from_file<P: AsRef<Path>>(path: P) -> Result<String, Box<dyn error::Error>> {
@@ -89,6 +89,11 @@ impl CachedStatus {
             status_response,
             player_samples: Vec::new(),
         }
+    }
+
+    /// Replaces the server list icon right away, without a restart.
+    pub fn set_favicon(&mut self, png_data: &[u8]) {
+        self.status_response.favicon = Some(load_icon_from_bytes(png_data));
     }
 
     pub fn get_status_response(&self, client_protocol: i32) -> StatusResponse {
