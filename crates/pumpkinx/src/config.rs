@@ -16,6 +16,7 @@ pub struct PumpkinXConfig {
     pub multiversion: MultiversionConfig,
     pub patchbukkit: PatchBukkitConfig,
     pub keystone: KeystoneConfig,
+    pub explosions: ExplosionsConfig,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -62,6 +63,28 @@ impl Default for KeystoneConfig {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExplosionsConfig {
+    /// Turn big TNT clusters into one blast that spreads over many ticks, instead of one
+    /// entity and one explosion per TNT block. Craters differ from vanilla.
+    pub merge_chains: bool,
+    /// The smallest cluster that gets merged.
+    pub min_tnt: u32,
+    /// Milliseconds of every 50 ms tick that a blast may use.
+    pub tick_budget_ms: u32,
+}
+
+impl Default for ExplosionsConfig {
+    fn default() -> Self {
+        Self {
+            merge_chains: true,
+            min_tnt: 64,
+            tick_budget_ms: 10,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct PatchBukkitConfig {
@@ -77,6 +100,7 @@ impl Default for PumpkinXConfig {
             multiversion: MultiversionConfig::default(),
             patchbukkit: PatchBukkitConfig::default(),
             keystone: KeystoneConfig::default(),
+            explosions: ExplosionsConfig::default(),
         }
     }
 }

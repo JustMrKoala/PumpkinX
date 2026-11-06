@@ -7,7 +7,7 @@ use std::collections::VecDeque;
 use std::fmt::Write as _;
 use std::sync::{
     LazyLock, Mutex,
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU32, Ordering},
 };
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -43,6 +43,26 @@ pub fn accepts_protocol(protocol: i32) -> bool {
     multiversion_enabled()
         && u32::try_from(protocol)
             .is_ok_and(|p| JavaMinecraftVersion::from_protocol(p) != JavaMinecraftVersion::Unknown)
+}
+
+static CHAIN_MIN_TNT: AtomicU32 = AtomicU32::new(0);
+static CHAIN_TICK_BUDGET_MS: AtomicU32 = AtomicU32::new(10);
+
+/// Treats TNT clusters of at least `min_tnt` blocks as one blast that takes up to
+/// `tick_budget_ms` of every tick. A `min_tnt` of 0 keeps the vanilla chain reaction.
+pub fn set_chain_explosions(min_tnt: u32, tick_budget_ms: u32) {
+    CHAIN_MIN_TNT.store(min_tnt, Ordering::Release);
+    CHAIN_TICK_BUDGET_MS.store(tick_budget_ms.max(1), Ordering::Release);
+}
+
+#[must_use]
+pub fn chain_min_tnt() -> u32 {
+    CHAIN_MIN_TNT.load(Ordering::Acquire)
+}
+
+#[must_use]
+pub fn chain_tick_budget_ms() -> u32 {
+    CHAIN_TICK_BUDGET_MS.load(Ordering::Acquire)
 }
 
 /// One line of server log, as the dashboard shows it.

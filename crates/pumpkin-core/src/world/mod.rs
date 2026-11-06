@@ -263,6 +263,8 @@ pub struct World {
     /// Goes up with every block write. Lets caches notice that the world changed.
     pub(crate) block_changes: std::sync::atomic::AtomicU64,
     pub(crate) exposure_cache: std::sync::Mutex<explosion::ExposureCache>,
+    /// Big TNT clusters that are going off, see [`explosion::mega`].
+    pub(crate) mega_explosions: std::sync::Mutex<Vec<explosion::mega::MegaExplosion>>,
     /// Persisted vanilla POI storage for portal and villager lookups.
     pub portal_poi: std::sync::Mutex<portal::PortalPoiStorage>,
     /// Villager job sites and their current owners.
@@ -427,6 +429,7 @@ impl World {
             unsent_block_changes: std::sync::Mutex::new(HashMap::new()),
             block_changes: std::sync::atomic::AtomicU64::new(0),
             exposure_cache: std::sync::Mutex::default(),
+            mega_explosions: std::sync::Mutex::default(),
             portal_poi: std::sync::Mutex::new(portal_poi),
             villager_poi: std::sync::Mutex::new(villager_poi::VillagerPoiStorage::default()),
             wandering_trader_spawner: wandering_trader_spawner::WanderingTraderSpawner::default(),
@@ -1562,6 +1565,7 @@ impl World {
         self.flush_synced_block_events();
         self.update_active_chunks();
         self.tick_environment();
+        explosion::mega::tick(self);
         let mut raids = {
             let mut guard = self
                 .raids
@@ -4076,6 +4080,11 @@ impl World {
         }
 
         let block_count = explosion.explode(self);
+        self.send_explosion_effect(position, power, block_count as i32);
+    }
+
+    /// The particles and sound of an explosion, for everyone close enough.
+    pub(crate) fn send_explosion_effect(&self, position: Vector3<f64>, power: f32, blocks: i32) {
         let particle = if power < 2.0 {
             Particle::Explosion
         } else {
@@ -4089,7 +4098,7 @@ impl World {
             player.try_send_client_packet(&CExplosion::new(
                 position,
                 power,
-                block_count as i32,
+                blocks,
                 None,
                 VarInt(particle as i32),
                 sound.clone(),
@@ -6370,6 +6379,14 @@ impl World {
     ) {
         let source_block = self.get_block(block_pos);
         self.update_neighbors_at(block_pos, source_block, except);
+    }
+
+    /// The neighbor and shape updates a block change at `position` would have sent, for a
+    /// change that skipped them.
+    pub(crate) fn notify_around(self: &Arc<Self>, position: &BlockPos) {
+        self.update_neighbors_at(position, &Block::AIR, None);
+        self.block_registry
+            .update_neighbors(self, position, BlockFlags::NOTIFY_LISTENERS);
     }
 
     pub fn update_neighbor(self: &Arc<Self>, neighbor_block_pos: &BlockPos, source_block: &Block) {

@@ -41,6 +41,23 @@ PumpkinX explosions are much cheaper than upstream's, with the same results as v
 
 The server also identifies itself as `PumpkinX` in the F3 screen.
 
+### Chain explosions
+
+When an explosion hits a cluster of at least 64 TNT blocks, the cluster no longer turns into one entity per block. PumpkinX walks through the TNT and removes it, then sends a single pressure wave outward from all of it. The wave loses energy per block, so soft blocks go far and obsidian stops it. A blast uses at most 10 ms of each tick, so the crater grows over a few seconds while the server keeps running.
+
+A 25x25x25 TNT cube in dirt took about 190 seconds with a peak of 1782 mspt the vanilla way, and 4 seconds with a peak of 11 mspt this way (one Windows machine, one bot connected).
+
+This is not vanilla behavior. Craters have a different shape, fewer blocks drop items, and everything nearby takes one hit instead of many. Plugins see one block explode event for the explosion that started the chain, not one per block. A blast in progress is not saved: if the server stops halfway, the TNT that was not reached stays in the world as blocks.
+
+Change it in `pumpkinx.toml`:
+
+```toml
+[explosions]
+merge_chains = true   # false restores the vanilla chain reaction
+min_tnt = 64          # smallest cluster that gets merged
+tick_budget_ms = 10   # share of each 50 ms tick a blast may use
+```
+
 ## Building
 
 Needs Rust stable, and for PatchBukkit a JDK 25 (Gradle builds the Java bridge).

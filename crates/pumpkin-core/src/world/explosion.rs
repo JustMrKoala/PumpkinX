@@ -21,6 +21,8 @@ use crate::{
 
 use super::{BlockFlags, World};
 
+pub mod mega;
+
 /// Defines the type of explosion interaction with the world.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExplosionInteraction {
@@ -728,7 +730,8 @@ impl Explosion {
                 if event.cancelled {
                     return 0;
                 }
-                let blocks = self.get_blocks_to_destroy(world);
+                let mut blocks = self.get_blocks_to_destroy(world);
+                mega::absorb(world, &mut blocks);
                 let decay_drops = self.block_interaction == BlockInteraction::DestroyWithDecay;
                 let explosion_radius = decay_drops.then_some(self.power);
                 let is_raining = world.is_raining();
