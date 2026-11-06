@@ -2,7 +2,7 @@
 
 use std::{
     fs,
-    sync::{Arc, Mutex},
+    sync::{Arc, LazyLock, Mutex},
 };
 
 use axum::{
@@ -30,6 +30,28 @@ const INDEX_HTML: &str = include_str!("../assets/index.html");
 const APP_JS: &str = include_str!("../assets/app.js");
 const APP_CSS: &str = include_str!("../assets/app.css");
 const LOGO_SVG: &str = include_str!("../assets/logo.svg");
+
+/// The page, with its script and stylesheet links tied to their content. Cloudflare replaces
+/// our `no-cache` with a browser cache of hours, and a stale script next to a fresh page
+/// silently drops settings it doesn't know. A new build now means a new URL.
+static INDEX_PAGE: LazyLock<String> = LazyLock::new(|| versioned_page(INDEX_HTML, APP_JS, APP_CSS));
+
+fn content_version(body: &str) -> u64 {
+    body.bytes().fold(0xcbf2_9ce4_8422_2325, |hash: u64, byte| {
+        (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3)
+    })
+}
+
+fn versioned_page(page: &str, script: &str, style: &str) -> String {
+    page.replace(
+        "\"/app.js\"",
+        &format!("\"/app.js?v={:x}\"", content_version(script)),
+    )
+    .replace(
+        "\"/app.css\"",
+        &format!("\"/app.css?v={:x}\"", content_version(style)),
+    )
+}
 
 const PUMPKIN_TOML: &str = "pumpkin.toml";
 const ICON_FILE: &str = "icon.png";
@@ -93,7 +115,7 @@ pub async fn spawn(px: Arc<PumpkinX>, server: Arc<Server>) {
         .with_state(state);
 
     let app = Router::new()
-        .route("/", get(|| async { asset(INDEX_HTML, "text/html; charset=utf-8") }))
+        .route("/", get(|| async { asset(INDEX_PAGE.as_str(), "text/html; charset=utf-8") }))
         .route("/app.js", get(|| async { asset(APP_JS, "text/javascript; charset=utf-8") }))
         .route("/app.css", get(|| async { asset(APP_CSS, "text/css; charset=utf-8") }))
         .route("/logo.svg", get(|| async { asset(LOGO_SVG, "image/svg+xml") }))
@@ -449,4 +471,17 @@ async fn stop() -> ApiResult {
     tracing::warn!("[dashboard] stop requested");
     pumpkin_core::stop_server();
     Ok(Json(json!({ "ok": true })))
+}
+
+#[cfg(test)]
+mod asset_tests {
+    use super::{APP_CSS, APP_JS, INDEX_HTML, content_version, versioned_page};
+
+    #[test]
+    fn page_links_change_with_their_content() {
+        let page = versioned_page(INDEX_HTML, APP_JS, APP_CSS);
+        assert!(page.contains(&format!("/app.js?v={:x}", content_version(APP_JS))));
+        assert!(page.contains(&format!("/app.css?v={:x}", content_version(APP_CSS))));
+        assert_ne!(page, versioned_page(INDEX_HTML, "changed", APP_CSS));
+    }
 }
