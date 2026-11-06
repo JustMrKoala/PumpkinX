@@ -44,13 +44,24 @@ const CHAIN_REACH: i32 = 2;
 const JOIN_REACH: i32 = 48;
 /// Caps the chain per tick, otherwise it finishes too fast to see.
 const CHAIN_TNT_PER_TICK: usize = 1500;
-/// What a single TNT reaches: vanilla's strongest ray, `1.3 * 4`.
-const BASE_ENERGY: f32 = 5.2;
+/// The energy and reach below are fitted to vanilla craters measured on flat stone and dirt.
+/// Thousands of separate blasts add up and scatter TNT around, which leaves a wide saucer:
+/// a radius of about 2.8 times the cube's side, and a depth of 5 + 0.65 times its side in stone.
+const BASE_ENERGY: f32 = 17.5;
 /// Extra energy per unit of cluster size (the cube root of the TNT count).
-const ENERGY_PER_SIZE: f32 = 0.6;
-const MAX_ENERGY: f32 = 32.0;
-/// Energy lost per block of travel.
+const ENERGY_PER_SIZE: f32 = 2.3;
+const MAX_ENERGY: f32 = 100.0;
+/// How far the wave runs through open air past the cluster, per unit of cluster size.
+const REACH_PER_SIZE: f32 = 2.3;
+const MAX_REACH: f32 = 80.0;
+/// Energy lost per block of travel through solid ground.
 const TRAVEL_COST: f32 = 1.0;
+/// Air above the cluster drains the wave this much faster, as nothing up there can be hit
+/// and every cell costs time.
+const RISING_AIR_FACTOR: f32 = 3.0;
+/// Blocks this tough stop the wave. Vanilla rays never carry more than 5.2, so no number of
+/// them breaks these: obsidian and water stay what they are.
+const MAX_RESISTANCE: f32 = 17.0;
 /// Stops a wave in open air from walking the whole sky. About 50 MB of bookkeeping.
 const MAX_CELLS: usize = 2_000_000;
 /// Destroyed blocks between two explosion effects on the client.
@@ -91,10 +102,16 @@ fn blast_energy(tnt: usize) -> f32 {
         .min(MAX_ENERGY as f64) as f32
 }
 
-/// Energy a block takes out of the wave. Same scale as vanilla rays: they lose
-/// `(resistance + 0.3) * 0.3` per step of 0.3 blocks.
-fn block_cost(resistance: f32, noise: f32) -> f32 {
-    (resistance + 0.3).mul_add(noise, TRAVEL_COST)
+/// How many blocks of open air the wave crosses before it dies.
+fn blast_reach(tnt: usize) -> f32 {
+    (((tnt as f64).cbrt() as f32) * REACH_PER_SIZE).min(MAX_REACH)
+}
+
+/// Energy a block takes out of the wave, or `None` when it stops the wave. The root keeps
+/// stone about twice as hard as dirt, which is what vanilla craters show: repeated blasts
+/// wear tough blocks down, so resistance counts for less than in a single ray.
+fn block_cost(resistance: f32, noise: f32) -> Option<f32> {
+    (resistance < MAX_RESISTANCE).then(|| (resistance + 0.3).sqrt().mul_add(noise, TRAVEL_COST))
 }
 
 fn is_tnt(block: &Block) -> bool {
@@ -148,6 +165,8 @@ pub struct MegaExplosion {
     min: Vector3<i32>,
     max: Vector3<i32>,
     energy: f32,
+    /// Energy lost per block of open air.
+    air_cost: f32,
     wave: BinaryHeap<Front>,
     /// The strongest energy that entered each cell so far.
     visited: FxHashMap<BlockPos, f32>,
@@ -175,6 +194,7 @@ impl MegaExplosion {
             min: seed.0,
             max: seed.0,
             energy: BASE_ENERGY,
+            air_cost: TRAVEL_COST,
             wave: BinaryHeap::new(),
             visited: FxHashMap::default(),
             survivors: Vec::new(),
@@ -322,6 +342,8 @@ impl MegaExplosion {
 
     fn begin_blast(&mut self, world: &Arc<World>) {
         self.energy = blast_energy(self.sources.len());
+        let reach = blast_reach(self.sources.len());
+        self.air_cost = self.energy / reach;
         self.phase = Phase::Blast;
         let sources = std::mem::take(&mut self.sources);
         self.claimed = FxHashSet::default();
@@ -342,7 +364,7 @@ impl MegaExplosion {
         }
 
         // One hit for everything nearby. The radius of an explosion is twice its power.
-        let power = f32::midpoint(half_diagonal as f32, self.energy) + 2.0;
+        let power = f32::midpoint(half_diagonal as f32, reach) + 2.0;
         Explosion::new(power, center, BlockInteraction::Keep).damage_entities(world);
         world.send_explosion_effect(center, power.min(16.0), self.destroyed as i32);
     }
@@ -378,11 +400,13 @@ impl MegaExplosion {
                 self.remove_block(world, front.pos, info.block, info.state);
                 self.energy
             } else if info.empty {
-                front.energy - TRAVEL_COST
+                let rising = front.pos.0.y > self.max.y;
+                front.energy - self.air_cost * if rising { RISING_AIR_FACTOR } else { 1.0 }
             } else {
                 // The noise gives the crater a ragged edge, as random rays do.
                 let noise = rng.random_range(0.85..1.15);
-                let left = front.energy - block_cost(info.resistance.unwrap_or(0.0), noise);
+                let cost = block_cost(info.resistance.unwrap_or(0.0), noise);
+                let left = cost.map_or(0.0, |cost| front.energy - cost);
                 if left > 0.0 {
                     self.remove_block(world, front.pos, info.block, info.state);
                 } else {
@@ -572,7 +596,7 @@ pub(crate) fn tick(world: &Arc<World>) {
 mod tests {
     use super::{
         BASE_ENERGY, BlockPos, CHAIN_REACH, Front, JOIN_REACH, MAX_ENERGY, MegaExplosion,
-        Vector3, blast_energy, block_cost, cluster_offsets,
+        Vector3, blast_energy, blast_reach, block_cost, cluster_offsets,
     };
     use std::collections::BinaryHeap;
 
@@ -584,18 +608,29 @@ mod tests {
     fn energy_grows_with_the_cluster_and_is_capped() {
         assert!(blast_energy(1) > BASE_ENERGY);
         assert!(blast_energy(15_625) > blast_energy(64));
-        assert!((blast_energy(15_625) - 20.2).abs() < 0.01);
+        assert!((blast_energy(15_625) - 75.0).abs() < 0.01);
         assert!((blast_energy(usize::MAX) - MAX_ENERGY).abs() < f32::EPSILON);
     }
 
     #[test]
-    fn resistant_blocks_stop_the_wave_quickly() {
+    fn crater_depth_follows_vanilla() {
         let energy = blast_energy(15_625);
-        // Dirt is 0.5, stone 6, obsidian 1200.
-        let reach = |resistance| (energy / block_cost(resistance, 1.0)) as i32;
-        assert_eq!(reach(0.5), 11);
-        assert_eq!(reach(6.0), 2);
-        assert_eq!(reach(1200.0), 0);
+        // Dirt is 0.5, stone 6.
+        let depth = |resistance| (energy / block_cost(resistance, 1.0).unwrap()) as i32;
+        assert_eq!(depth(0.5), 39);
+        assert_eq!(depth(6.0), 21);
+    }
+
+    #[test]
+    fn obsidian_and_water_stop_the_wave() {
+        assert!(block_cost(1200.0, 1.0).is_none());
+        assert!(block_cost(100.0, 1.0).is_none());
+    }
+
+    #[test]
+    fn reach_grows_with_the_cluster_and_is_capped() {
+        assert!((blast_reach(15_625) - 57.5).abs() < 0.01);
+        assert!(blast_reach(usize::MAX) <= 80.0);
     }
 
     #[test]

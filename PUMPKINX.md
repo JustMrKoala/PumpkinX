@@ -45,7 +45,16 @@ The server also identifies itself as `PumpkinX` in the F3 screen.
 
 When an explosion hits a cluster of at least 64 TNT blocks, the cluster no longer turns into one entity per block. PumpkinX walks through the TNT and removes it, then sends a single pressure wave outward from all of it. The wave loses energy per block, so soft blocks go far and obsidian stops it. A blast uses at most 10 ms of each tick, so the crater grows over a few seconds while the server keeps running.
 
-A 25x25x25 TNT cube in dirt took about 190 seconds with a peak of 1782 mspt the vanilla way, and 4 seconds with a peak of 11 mspt this way (one Windows machine, one bot connected).
+The blast is fitted to craters measured the vanilla way, on flat ground on one Windows machine:
+
+| TNT cube | Ground | Vanilla crater | Merged crater | Vanilla time | Merged time |
+| --- | --- | --- | --- | --- | --- |
+| 5x5x5 | stone | 1891 blocks, 8 deep | 1418 blocks, 8 deep | 12 s | under 1 s |
+| 15x15x15 | stone | 30197 blocks, 15 deep | 26807 blocks, 15 deep | 28 s | 3 s |
+| 25x25x25 | stone | 86265 blocks, 21 deep | 106223 blocks, 22 deep | 172 s | 9 s |
+| 25x25x25 | dirt | 287515 blocks, 43 deep | 197378 blocks, 40 deep | over 420 s | 33 s |
+
+Counts only include a 101x101 area around the cube, and big vanilla craters reach past it. Merged ticks peaked at 47 mspt in these runs. Merged craters in dirt are narrower than vanilla ones.
 
 This is not vanilla behavior. Craters have a different shape, fewer blocks drop items, and everything nearby takes one hit instead of many. Plugins see one block explode event for the explosion that started the chain, not one per block. A blast in progress is not saved: if the server stops halfway, the TNT that was not reached stays in the world as blocks.
 
