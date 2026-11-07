@@ -222,7 +222,7 @@ pub fn mask_sections(sections: &[BlockPalette]) -> MaskedChunk {
 }
 
 /// Where a listed block of a chunk is in the world.
-fn listed_position(chunk: Vector2<i32>, min_y: i32, entry: u32) -> BlockPos {
+const fn listed_position(chunk: Vector2<i32>, min_y: i32, entry: u32) -> BlockPos {
     let entry = entry as i32;
     let x = entry & 15;
     let z = (entry >> 4) & 15;
@@ -234,7 +234,7 @@ fn listed_position(chunk: Vector2<i32>, min_y: i32, entry: u32) -> BlockPos {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Sight {
     Seen,
-    OutOfSight,
+    Blocked,
     /// All sides are covered. Should that change, the neighbor update sends the block.
     Enclosed,
 }
@@ -246,11 +246,11 @@ fn sight_of(world: &World, eye: Vector3<f64>, pos: BlockPos, near: bool) -> Sigh
         match world.get_block_state_id_if_loaded(&next) {
             Some(id) if occludes(id) => continue,
             None => {
-                sight = Sight::OutOfSight;
+                sight = Sight::Blocked;
                 continue;
             }
             Some(_) if near => return Sight::Seen,
-            Some(_) => sight = Sight::OutOfSight,
+            Some(_) => sight = Sight::Blocked,
         }
         let face = |block: i32, side: i32| f64::from(block) + 0.5 + f64::from(side) * 0.5;
         let faces_eye = (eye.x - face(pos.0.x, x)) * f64::from(x)
@@ -317,7 +317,7 @@ fn reveal_to_player(player: &Player, round: usize) {
                 settled.push((*chunk, *pos));
             }
             Sight::Enclosed => settled.push((*chunk, *pos)),
-            Sight::OutOfSight => {}
+            Sight::Blocked => {}
         }
     }
 
