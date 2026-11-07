@@ -3206,8 +3206,16 @@ impl Player {
         };
 
         let view_distance = self.watched_section.load().view_distance;
+        // Dimensions without daylight have no outside to tell the underground from.
+        let view = (crate::pumpkinx::server_culling()
+            && world.dimension.has_skylight
+            && version == pumpkin_data::packet::CURRENT_MC_VERSION)
+            .then(|| crate::world::culling::PlayerView {
+                eye: self.get_entity().get_eye_pos(),
+                level: world.level.clone(),
+            });
         let prepared_batch = self.chunk_sender.try_lock().ok().and_then(|mut sender| {
-            sender.prepare_batch(&world.level, player_chunk, view_distance, epoch, version)
+            sender.prepare_batch(&world.level, player_chunk, view_distance, epoch, version, view)
         });
 
         let total_sent_chunks = prepared_batch.map_or_else(

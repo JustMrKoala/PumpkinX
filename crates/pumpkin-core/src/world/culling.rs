@@ -16,14 +16,29 @@
 //! them. Under open sky they are sent as usual. Everywhere else they are hidden too and listed
 //! on the chunk, and each player gets the real block once it is close and in sight. Chunks
 //! stay the same for all players: only the small reveal packets differ.
+//!
+//! Underground: what a block is made of isn't the only giveaway, the shape of a cave or a base
+//! is one too. So a client only gets the outside of the world, plus the sections close to it.
+//! Further away every block out of reach of daylight is sent as filler, and its block light as
+//! dark, which turns caves and bases into solid rock. Skylight decides what counts as outside:
+//! it follows ravines and cave mouths and stops at walls, so buildings and cliffs stay as they
+//! are. This part of the chunk does depend on the player. Each section comes in for real once
+//! the player is close, and stays real until its chunk is sent again.
 
 use pumpkin_data::packet::CURRENT_MC_VERSION;
 use pumpkin_data::{Block, BlockStateId};
+use pumpkin_protocol::codec::bit_set::BitSet;
 use pumpkin_protocol::codec::var_int::VarInt;
-use pumpkin_protocol::java::client::play::{CBlockEntityData, CBlockUpdate};
+use pumpkin_protocol::java::client::play::{
+    CBlockEntityData, CBlockUpdate, CLightUpdate, CMultiBlockUpdate, LightData,
+};
 use pumpkin_util::math::{position::BlockPos, vector2::Vector2, vector3::Vector3};
+use pumpkin_world::chunk::ChunkData;
+use pumpkin_world::chunk::format::LightContainer;
 use pumpkin_world::chunk::palette::BlockPalette;
+use pumpkin_world::level::Level;
 use rustc_hash::FxHashMap;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::World;
@@ -42,13 +57,16 @@ pub(crate) const ALWAYS_VISIBLE_DISTANCE: f64 = 16.0;
 pub(crate) const MISSES_BEFORE_HIDING: u8 = 3;
 /// Ticks between two visibility checks.
 pub(crate) const CHECK_INTERVAL: u32 = 5;
-/// Hidden valuables further away than this stay hidden, even in plain sight.
+/// Hidden valuables further away than this stay hidden, even in plain sight. Sections closer
+/// than this are real.
 const REVEAL_DISTANCE: f64 = 32.0;
 /// Exposed valuables closer than this need no line of sight, so what a player can reach or
 /// walk into is always real.
 const NEAR_DISTANCE: f64 = 6.0;
 /// Most hidden blocks one player checks per round. The rest wait for the next round.
 const CHECKS_PER_ROUND: usize = 256;
+/// Most chunks a player gets real sections from per tick. The nearest go first.
+const REVEALED_CHUNKS_PER_TICK: usize = 2;
 
 const SIDES: [(i32, i32, i32); 6] = [
     (1, 0, 0),
@@ -73,6 +91,133 @@ fn is_valuable(id: BlockStateId) -> bool {
     id.to_state().block_entity_type != u16::MAX
         || block.name.ends_with("_ore")
         || block.id == Block::ANCIENT_DEBRIS.id
+}
+
+/// Who a chunk is being sent to, for hiding what is out of reach of daylight.
+#[derive(Clone)]
+pub struct PlayerView {
+    pub eye: Vector3<f64>,
+    pub level: Arc<Level>,
+}
+
+/// A section sent with its underground hidden. All hidden cells hold `filler` on the client.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HiddenSection {
+    pub index: u16,
+    pub filler: BlockStateId,
+}
+
+/// Per row of a section (`y * 16 + z`), the blocks along x that are hidden underground.
+pub type BuriedRows = [u16; SIDE * SIDE];
+
+/// What masking the underground of a chunk needs to know.
+pub struct Underground {
+    eye: Vector3<f64>,
+    chunk: Vector2<i32>,
+    min_y: i32,
+    sky: Box<[LightContainer]>,
+    /// The open cells just past each chunk edge, per block layer. `None` if that chunk isn't
+    /// loaded. The edge then counts as closed, or every chunk that was sent at the edge of the
+    /// view would keep a slice of its caves.
+    north: Option<Vec<u16>>,
+    south: Option<Vec<u16>>,
+    west: Option<Vec<u16>>,
+    east: Option<Vec<u16>>,
+}
+
+impl Underground {
+    /// Takes the locks of this chunk and its neighbors one at a time, so call it with none held.
+    #[must_use]
+    pub fn read(chunk: &ChunkData, view: &PlayerView) -> Option<Self> {
+        let sky = chunk.light_engine.lock().ok()?.sky_light.clone();
+        let edge = |x: i32, z: i32, cell: fn(usize) -> (usize, usize)| {
+            let pos = Vector2::new(chunk.x + x, chunk.z + z);
+            let next = view.level.loaded_chunks.get(&pos)?.value().clone();
+            open_edge(&next, cell)
+        };
+        Some(Self {
+            eye: view.eye,
+            chunk: Vector2::new(chunk.x, chunk.z),
+            min_y: chunk.section.min_y,
+            sky,
+            north: edge(0, -1, |x| (x, SIDE - 1)),
+            south: edge(0, 1, |x| (x, 0)),
+            west: edge(-1, 0, |z| (SIDE - 1, z)),
+            east: edge(1, 0, |z| (0, z)),
+        })
+    }
+
+    fn is_far(&self, section: usize) -> bool {
+        let bottom = self.min_y + (section * SIDE) as i32;
+        section_distance(self.eye, self.chunk, bottom) > REVEAL_DISTANCE * REVEAL_DISTANCE
+    }
+
+    /// The blocks of a row that neither are open nor touch anything open.
+    fn buried(&self, open: &[[u16; SIDE]], layer: usize, z: usize) -> u16 {
+        let edge = |rows: &Option<Vec<u16>>| rows.as_ref().map_or(0, |rows| rows[layer]);
+        let row = open[layer][z];
+        let above = open.get(layer + 1).map_or(FULL_ROW, |rows| rows[z]);
+        let below = layer.checked_sub(1).map_or(0, |y| open[y][z]);
+        let north = z
+            .checked_sub(1)
+            .map_or_else(|| edge(&self.north), |z| open[layer][z]);
+        let south = open[layer]
+            .get(z + 1)
+            .copied()
+            .unwrap_or_else(|| edge(&self.south));
+        let west = (row << 1) | ((edge(&self.west) >> z) & 1);
+        let east = (row >> 1) | (((edge(&self.east) >> z) & 1) << (SIDE - 1));
+        !(row | above | below | north | south | west | east)
+    }
+
+    fn buried_rows(&self, open: &[[u16; SIDE]], section: usize) -> Option<Box<BuriedRows>> {
+        let mut rows = Box::new([0; SIDE * SIDE]);
+        for y in 0..SIDE {
+            for z in 0..SIDE {
+                rows[y * SIDE + z] = self.buried(open, section * SIDE + y, z);
+            }
+        }
+        rows.iter().any(|row| *row != 0).then_some(rows)
+    }
+}
+
+/// Squared distance from a point to the nearest block of a section.
+fn section_distance(eye: Vector3<f64>, chunk: Vector2<i32>, bottom: i32) -> f64 {
+    let gap = |eye: f64, start: i32| {
+        let start = f64::from(start);
+        (start - eye).max(eye - start - SIDE as f64).max(0.0)
+    };
+    let (x, y, z) = (
+        gap(eye.x, chunk.x * SIDE as i32),
+        gap(eye.y, bottom),
+        gap(eye.z, chunk.y * SIDE as i32),
+    );
+    x * x + y * y + z * z
+}
+
+/// The cells along one chunk edge that daylight reaches, per block layer. A cell is open with
+/// nothing solid above it, or with skylight on it.
+fn open_edge(chunk: &ChunkData, cell: fn(usize) -> (usize, usize)) -> Option<Vec<u16>> {
+    let sky = chunk.light_engine.lock().ok()?.sky_light.clone();
+    let sections = chunk.section.block_sections.read().ok()?;
+    if sky.len() != sections.len() {
+        return None;
+    }
+    let mut rows = vec![0; sections.len() * SIDE];
+    let mut roofed = 0u16;
+    for layer in (0..rows.len()).rev() {
+        let (section, y) = (layer / SIDE, layer % SIDE);
+        for along in 0..SIDE {
+            let (x, z) = cell(along);
+            let bit = 1 << along;
+            if occludes(sections[section].get(x, y, z)) {
+                roofed |= bit;
+            } else if roofed & bit == 0 || sky[section].get(x, y, z) > 0 {
+                rows[layer] |= bit;
+            }
+        }
+    }
+    Some(rows)
 }
 
 /// Blocks of a chunk, flat, with one occlusion bit per block.
@@ -122,6 +267,33 @@ impl ChunkBits {
         roofs
     }
 
+    /// Per block layer and z, the cells along x that daylight reaches.
+    fn open_rows(&self, sky: &[LightContainer]) -> Vec<[u16; SIDE]> {
+        let mut open = vec![[0; SIDE]; self.rows.len()];
+        let mut roofed = [0u16; SIDE];
+        for layer in (0..self.rows.len()).rev() {
+            let (section, y) = (layer / SIDE, layer % SIDE);
+            for z in 0..SIDE {
+                let solid = self.rows[layer][z];
+                roofed[z] |= solid;
+                let mut lit = !roofed[z];
+                match &sky[section] {
+                    LightContainer::Empty(0) => {}
+                    LightContainer::Empty(_) => lit = FULL_ROW,
+                    light @ LightContainer::Full(_) => {
+                        for x in 0..SIDE {
+                            if light.get(x, y, z) > 0 {
+                                lit |= 1 << x;
+                            }
+                        }
+                    }
+                }
+                open[layer][z] = lit & !solid;
+            }
+        }
+        open
+    }
+
     /// The blocks of one row with all six sides covered. `outside` is what lies past the chunk
     /// edge, as a row: 0 for open, [`FULL_ROW`] for covered. The world's floor is covered and
     /// the sky is open.
@@ -143,13 +315,30 @@ pub struct MaskedChunk {
     pub sections: Vec<Option<BlockPalette>>,
     /// Hidden blocks that a player may come to see. See `culled_valuables` on the chunk.
     pub valuables: Vec<u32>,
+    /// Sections with a hidden underground. These differ per player.
+    pub hidden: Vec<HiddenSection>,
+    /// Per section, what is hidden underground.
+    pub buried: Vec<Option<Box<BuriedRows>>>,
 }
 
 /// Masks a chunk. The result doesn't depend on the player.
 #[must_use]
 pub fn mask_sections(sections: &[BlockPalette]) -> MaskedChunk {
+    mask_for_player(sections, None)
+}
+
+/// Masks a chunk, and with `underground` also hides what is out of reach of daylight.
+#[must_use]
+pub fn mask_for_player(
+    sections: &[BlockPalette],
+    underground: Option<&Underground>,
+) -> MaskedChunk {
     let bits = ChunkBits::read(sections);
     let roofs = bits.roofs();
+    let underground = underground.filter(|underground| underground.sky.len() == sections.len());
+    let open = underground.map(|underground| bits.open_rows(&underground.sky));
+    let mut hidden_sections = Vec::new();
+    let mut all_buried = Vec::with_capacity(sections.len());
     let mut masked = Vec::with_capacity(sections.len());
     let mut valuables = Vec::new();
     let mut hidden = Vec::new();
@@ -197,8 +386,14 @@ pub fn mask_sections(sections: &[BlockPalette]) -> MaskedChunk {
             }
         }
 
-        if hidden.is_empty() && emptied.is_empty() {
+        let buried = underground
+            .zip(open.as_ref())
+            .filter(|(underground, _)| underground.is_far(section))
+            .and_then(|(underground, open)| underground.buried_rows(open, section));
+
+        if hidden.is_empty() && emptied.is_empty() && buried.is_none() {
             masked.push(None);
+            all_buried.push(None);
             continue;
         }
         let filler = filler_counts
@@ -213,12 +408,39 @@ pub fn mask_sections(sections: &[BlockPalette]) -> MaskedChunk {
         for cell in &emptied {
             cells[*cell] = BlockStateId::AIR;
         }
+        if let Some(rows) = &buried {
+            for (row, bits) in rows.iter().enumerate() {
+                for x in (0..SIDE).filter(|x| bits & (1 << x) != 0) {
+                    cells[row * SIDE + x] = filler;
+                }
+            }
+            hidden_sections.push(HiddenSection {
+                index: section as u16,
+                filler,
+            });
+        }
+        all_buried.push(buried);
         masked.push(Some(BlockPalette::from_fn(|x, y, z| cells[index(x, y, z)])));
     }
     MaskedChunk {
         sections: masked,
         valuables,
+        hidden: hidden_sections,
+        buried: all_buried,
     }
+}
+
+/// Block light of a section with the hidden blocks dark, or the light would show the torches.
+#[must_use]
+pub fn darken_buried(light: &[u8], rows: &BuriedRows) -> Vec<u8> {
+    let mut light = light.to_vec();
+    for (row, bits) in rows.iter().enumerate() {
+        for x in (0..SIDE).filter(|x| bits & (1 << x) != 0) {
+            let cell = row * SIDE + x;
+            light[cell >> 1] &= if cell & 1 == 0 { 0xF0 } else { 0x0F };
+        }
+    }
+    light
 }
 
 /// Where a listed block of a chunk is in the world.
@@ -274,16 +496,177 @@ fn block_center(pos: BlockPos) -> Vector3<f64> {
 
 /// Runs a round of [`reveal_to_player`] every few ticks.
 pub(crate) fn tick_player(player: &Player) {
-    let tick = player.tick_counter.load(Ordering::Relaxed) as u32;
-    if !tick.is_multiple_of(CHECK_INTERVAL) || !pumpkinx::server_culling() {
+    // Other clients get real chunks, so they have nothing to be shown.
+    let ClientPlatform::Java(client) = player.client.as_ref() else {
+        return;
+    };
+    if client.version.load() != CURRENT_MC_VERSION {
         return;
     }
-    // Other clients get real chunks, so they have nothing to be shown.
-    if let ClientPlatform::Java(client) = player.client.as_ref()
-        && client.version.load() == CURRENT_MC_VERSION
-    {
+    // Every tick, and also with culling just switched off: this is what a client walks on.
+    reveal_sections(player);
+
+    let tick = player.tick_counter.load(Ordering::Relaxed) as u32;
+    if tick.is_multiple_of(CHECK_INTERVAL) && pumpkinx::server_culling() {
         reveal_to_player(player, (tick / CHECK_INTERVAL) as usize);
     }
+}
+
+/// Sends a player the real blocks of the hidden sections it came close to, nearest first.
+fn reveal_sections(player: &Player) {
+    let eye = player.get_entity().get_eye_pos();
+    let world = player.world();
+    let mut due = sections_in_reach(player, &world, eye);
+    due.sort_by(|a, b| a.0.total_cmp(&b.0));
+
+    let mut revealed = Vec::new();
+    for (_, chunk_pos, sections) in due.into_iter().take(REVEALED_CHUNKS_PER_TICK) {
+        let Some(chunk) = world
+            .level
+            .loaded_chunks
+            .get(&chunk_pos)
+            .map(|chunk| chunk.value().clone())
+        else {
+            continue;
+        };
+        if send_real_sections(player, &world, &chunk, &sections) {
+            revealed.push((chunk_pos, sections));
+        }
+    }
+
+    if !revealed.is_empty()
+        && let Ok(mut sender) = player.chunk_sender.try_lock()
+    {
+        for (chunk_pos, sections) in revealed {
+            sender.reveal_sections(chunk_pos, &sections);
+        }
+    }
+}
+
+/// The hidden sections in reveal range per chunk, with the distance of the nearest.
+fn sections_in_reach(
+    player: &Player,
+    world: &World,
+    eye: Vector3<f64>,
+) -> Vec<(f64, Vector2<i32>, Vec<HiddenSection>)> {
+    let Ok(sender) = player.chunk_sender.try_lock() else {
+        return Vec::new();
+    };
+    let mut found = Vec::new();
+    if !sender.has_hidden_sections() {
+        return found;
+    }
+    let min_y = world.dimension.min_y;
+    let chunk_of = |block: f64| (block.floor() as i32) >> 4;
+    for chunk_x in chunk_of(eye.x - REVEAL_DISTANCE)..=chunk_of(eye.x + REVEAL_DISTANCE) {
+        for chunk_z in chunk_of(eye.z - REVEAL_DISTANCE)..=chunk_of(eye.z + REVEAL_DISTANCE) {
+            let chunk_pos = Vector2::new(chunk_x, chunk_z);
+            if !sender.is_chunk_ready(&chunk_pos) {
+                continue;
+            }
+            let mut nearest = f64::MAX;
+            let sections: Vec<_> = sender
+                .hidden_sections(&chunk_pos)
+                .iter()
+                .filter(|hidden| {
+                    let bottom = min_y + i32::from(hidden.index) * SIDE as i32;
+                    let distance = section_distance(eye, chunk_pos, bottom);
+                    nearest = nearest.min(distance);
+                    distance <= REVEAL_DISTANCE * REVEAL_DISTANCE
+                })
+                .copied()
+                .collect();
+            if !sections.is_empty() {
+                found.push((nearest, chunk_pos, sections));
+            }
+        }
+    }
+    found
+}
+
+/// Sends what a client is missing of these sections. Only the filler can be wrong there: every
+/// other block is real, or was updated when it changed.
+fn send_real_sections(
+    player: &Player,
+    world: &World,
+    chunk: &ChunkData,
+    sections: &[HiddenSection],
+) -> bool {
+    let Ok(blocks) = chunk.section.block_sections.read() else {
+        return false;
+    };
+    let masked = mask_sections(&blocks);
+    let mut block_entities = Vec::new();
+    for hidden in sections {
+        let index = usize::from(hidden.index);
+        let Some(palette) = masked.sections[index].as_ref().or(blocks.get(index)) else {
+            continue;
+        };
+        let bottom = chunk.section.min_y + index as i32 * SIDE as i32;
+        let mut updates = Vec::new();
+        for y in 0..SIDE {
+            for z in 0..SIDE {
+                for x in 0..SIDE {
+                    let id = palette.get(x, y, z);
+                    if id == hidden.filler {
+                        continue;
+                    }
+                    let pos = BlockPos(Vector3::new(
+                        chunk.x * SIDE as i32 + x as i32,
+                        bottom + y as i32,
+                        chunk.z * SIDE as i32 + z as i32,
+                    ));
+                    updates.push((pos, id));
+                    if id.to_state().block_entity_type != u16::MAX {
+                        block_entities.push((pos, id));
+                    }
+                }
+            }
+        }
+        if !updates.is_empty() {
+            player.try_send_client_packet(&CMultiBlockUpdate::new_with_section(
+                Vector3::new(chunk.x, bottom >> 4, chunk.z),
+                false,
+                updates,
+            ));
+        }
+    }
+    drop(blocks);
+
+    for (pos, id) in block_entities {
+        send_real_block(player, world, pos, id);
+    }
+    if let Some(light) = real_block_light(chunk, sections) {
+        player.try_send_client_packet(&light);
+    }
+    true
+}
+
+/// The block light that was kept from a client for these sections.
+fn real_block_light(chunk: &ChunkData, sections: &[HiddenSection]) -> Option<CLightUpdate> {
+    let light = chunk.light_engine.lock().ok()?;
+    let mut indexes: Vec<_> = sections.iter().map(|hidden| hidden.index).collect();
+    indexes.sort_unstable();
+    let mut mask = 0u64;
+    let mut block_light_arrays = Vec::new();
+    for index in indexes {
+        if let Some(LightContainer::Full(data)) = light.block_light.get(usize::from(index)) {
+            // Bit 0 is the section below the world.
+            mask |= 1 << (index + 1);
+            block_light_arrays.push(data.to_vec());
+        }
+    }
+    (mask != 0).then(|| {
+        CLightUpdate::new(
+            VarInt(chunk.x),
+            VarInt(chunk.z),
+            LightData {
+                block_light_mask: BitSet(Box::new([mask as i64])),
+                block_light_arrays,
+                ..LightData::default()
+            },
+        )
+    })
 }
 
 /// Sends a player the hidden blocks it has come to see. They stay real for this client until
@@ -354,10 +737,16 @@ fn nearby_hidden_blocks(
             let Ok(listed) = section.culled_valuables.read().map(|list| list.clone()) else {
                 continue;
             };
+            let hidden = sender.hidden_sections(&chunk_pos);
             for entry in listed.iter() {
                 let pos = listed_position(chunk_pos, section.min_y, *entry);
-                if eye.squared_distance_to_vec(&block_center(pos))
-                    <= REVEAL_DISTANCE * REVEAL_DISTANCE
+                // A section that isn't real yet would overwrite the block again.
+                let in_hidden = hidden
+                    .iter()
+                    .any(|section| u32::from(section.index) == entry >> 12);
+                if !in_hidden
+                    && eye.squared_distance_to_vec(&block_center(pos))
+                        <= REVEAL_DISTANCE * REVEAL_DISTANCE
                     && !sender.is_block_settled(&chunk_pos, &pos)
                 {
                     found.push((chunk_pos, pos));
@@ -458,7 +847,9 @@ fn walk_ray(from: Vector3<f64>, to: Vector3<f64>, mut clear: impl FnMut(BlockPos
 #[cfg(test)]
 mod tests {
     use super::{
-        BlockPalette, BlockPos, Vector2, Vector3, index, listed_position, mask_sections, walk_ray,
+        BlockPalette, BlockPos, FULL_ROW, LightContainer, SIDE, Underground, Vector2, Vector3,
+        darken_buried, index, listed_position, mask_for_player, mask_sections, section_distance,
+        walk_ray,
     };
     use pumpkin_data::{Block, BlockStateId};
 
@@ -475,10 +866,7 @@ mod tests {
 
     fn masked_block(sections: &[BlockPalette], x: usize, y: usize, z: usize) -> BlockStateId {
         let masked = mask_sections(sections).sections;
-        masked[0]
-            .as_ref()
-            .unwrap_or(&sections[0])
-            .get(x, y, z)
+        masked[0].as_ref().unwrap_or(&sections[0]).get(x, y, z)
     }
 
     #[test]
@@ -512,7 +900,10 @@ mod tests {
             (8, 8, 8, &Block::CHEST),
             (9, 8, 8, &Block::AIR),
         ])];
-        assert_eq!(masked_block(&sections, 8, 8, 8), Block::AIR.default_state.id);
+        assert_eq!(
+            masked_block(&sections, 8, 8, 8),
+            Block::AIR.default_state.id
+        );
     }
 
     #[test]
@@ -608,6 +999,142 @@ mod tests {
         assert_eq!(index(1, 0, 0), 1);
         assert_eq!(index(0, 0, 1), 16);
         assert_eq!(index(0, 1, 0), 256);
+    }
+
+    /// Seen from far above, with solid neighbors on all sides.
+    fn far_view(sky: Vec<LightContainer>) -> Underground {
+        let solid = Some(vec![0; sky.len() * SIDE]);
+        Underground {
+            eye: Vector3::new(8.0, 1000.0, 8.0),
+            chunk: Vector2::new(0, 0),
+            min_y: 0,
+            sky: sky.into_boxed_slice(),
+            north: solid.clone(),
+            south: solid.clone(),
+            west: solid.clone(),
+            east: solid,
+        }
+    }
+
+    /// Solid up to y 7 of a section with sky above, and a dark cave inside the rock.
+    fn hill_with_cave() -> BlockPalette {
+        BlockPalette::from_fn(|x, y, z| {
+            let block = match (x, y, z) {
+                (5, 2, 5) => &Block::TORCH,
+                (_, 8.., _) | (4..=6, 2..=3, 4..=6) => &Block::AIR,
+                _ => &Block::STONE,
+            };
+            block.default_state.id
+        })
+    }
+
+    #[test]
+    fn a_dark_cave_turns_solid_from_afar() {
+        let sections = [hill_with_cave()];
+        let view = far_view(vec![LightContainer::Empty(0)]);
+        let masked = mask_for_player(&sections, Some(&view));
+        let palette = masked.sections[0].as_ref().unwrap_or(&sections[0]);
+        let stone = Block::STONE.default_state.id;
+        assert_eq!(palette.get(5, 3, 5), stone);
+        assert_eq!(palette.get(5, 2, 5), stone);
+        assert_eq!(masked.hidden[0].filler, stone);
+    }
+
+    #[test]
+    fn the_surface_stays_as_it_is() {
+        let sections = [BlockPalette::from_fn(|_, y, _| {
+            let block = match y {
+                0..=6 => &Block::STONE,
+                7 => &Block::DIRT,
+                _ => &Block::AIR,
+            };
+            block.default_state.id
+        })];
+        let view = far_view(vec![LightContainer::Empty(0)]);
+        let masked = mask_for_player(&sections, Some(&view));
+        let palette = masked.sections[0].as_ref().unwrap_or(&sections[0]);
+        assert_eq!(palette.get(8, 7, 8), Block::DIRT.default_state.id);
+        assert_eq!(palette.get(8, 8, 8), Block::AIR.default_state.id);
+    }
+
+    #[test]
+    fn a_wall_facing_daylight_stays_under_a_roof() {
+        // A hall under a roof, lit from the side: its walls must not turn to stone.
+        let sections = [BlockPalette::from_fn(|x, y, z| {
+            let block = match (x, y, z) {
+                (_, 0 | 15, _) => &Block::STONE,
+                (0, _, _) => &Block::OAK_PLANKS,
+                (1..=8, _, _) => &Block::AIR,
+                _ => &Block::STONE,
+            };
+            block.default_state.id
+        })];
+        let mut light = LightContainer::new_filled(0);
+        for y in 1..15 {
+            for z in 0..SIDE {
+                for x in 1..=8 {
+                    light.set(x, y, z, 8);
+                }
+            }
+        }
+        let view = far_view(vec![light]);
+        let masked = mask_for_player(&sections, Some(&view));
+        let palette = masked.sections[0].as_ref().unwrap_or(&sections[0]);
+        assert_eq!(palette.get(0, 7, 7), Block::OAK_PLANKS.default_state.id);
+        assert_eq!(palette.get(4, 7, 7), Block::AIR.default_state.id);
+    }
+
+    #[test]
+    fn daylight_past_the_chunk_edge_keeps_the_edge() {
+        let sections = [solid_with(&[(0, 8, 8, &Block::DIRT)])];
+        let mut view = far_view(vec![LightContainer::Empty(0)]);
+        view.west = Some(vec![FULL_ROW; SIDE]);
+        let masked = mask_for_player(&sections, Some(&view));
+        let palette = masked.sections[0].as_ref().unwrap_or(&sections[0]);
+        assert_eq!(palette.get(0, 8, 8), Block::DIRT.default_state.id);
+    }
+
+    #[test]
+    fn a_chunk_not_loaded_yet_keeps_no_slice_of_a_cave() {
+        let sections = [solid_with(&[
+            (15, 8, 8, &Block::AIR),
+            (14, 8, 8, &Block::AIR),
+        ])];
+        let mut view = far_view(vec![LightContainer::Empty(0)]);
+        view.east = None;
+        let masked = mask_for_player(&sections, Some(&view));
+        let palette = masked.sections[0].as_ref().unwrap_or(&sections[0]);
+        assert_eq!(palette.get(15, 8, 8), Block::STONE.default_state.id);
+    }
+
+    #[test]
+    fn close_sections_keep_their_caves() {
+        let sections = [hill_with_cave()];
+        let mut view = far_view(vec![LightContainer::Empty(0)]);
+        view.eye = Vector3::new(8.0, 30.0, 8.0);
+        let masked = mask_for_player(&sections, Some(&view));
+        assert!(masked.hidden.is_empty());
+        let palette = masked.sections[0].as_ref().unwrap_or(&sections[0]);
+        assert_eq!(palette.get(5, 3, 5), Block::AIR.default_state.id);
+    }
+
+    #[test]
+    fn hidden_torches_give_no_light() {
+        let mut rows = [0; SIDE * SIDE];
+        rows[2 * SIDE + 5] = 0b11 << 5;
+        let light = LightContainer::new(darken_buried(&[0xEE; 2048], &rows).into_boxed_slice());
+        assert_eq!(light.get(5, 0, 2), 14);
+        assert_eq!(light.get(5, 2, 5), 0);
+        assert_eq!(light.get(6, 2, 5), 0);
+        assert_eq!(light.get(7, 2, 5), 14);
+    }
+
+    #[test]
+    fn distance_to_a_section_is_zero_inside() {
+        let chunk = Vector2::new(1, 0);
+        assert!((section_distance(Vector3::new(20.0, 70.0, 3.0), chunk, 64) - 0.0).abs() < 1e-9);
+        assert!((section_distance(Vector3::new(20.0, 90.0, 3.0), chunk, 64) - 100.0).abs() < 1e-9);
+        assert!((section_distance(Vector3::new(6.0, 70.0, 3.0), chunk, 64) - 100.0).abs() < 1e-9);
     }
 
     fn ray(from: (f64, f64, f64), to: (f64, f64, f64), wall: i32) -> bool {

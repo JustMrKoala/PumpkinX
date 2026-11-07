@@ -82,6 +82,8 @@ Blocks: when a chunk is sent, blocks fully enclosed by other blocks are replaced
 
 Valuables (ores, ancient debris and block entities such as chests and spawners) that touch a cave are hidden as well: solid ones turn into the filler block and others, like chests, into air. Each player gets the real block once they are within 32 blocks and have a clear line to it, or within 6 blocks of it in any case. This is checked every 5 ticks, for at most 256 blocks per player per check. Valuables with open sky above them are always sent, so villages and surface builds look normal from afar. A block stays real for that client until its chunk is sent again.
 
+Underground: further than 32 blocks from a player, everything out of reach of daylight is sent as solid rock, with its block light dark. Caves, bases, torches and rails simply don't exist for that client, so xray shows only the area around the player. Skylight decides what counts as outside: it follows ravines and cave mouths and stops at walls, so the surface, buildings and cliffs stay as they are. Each 16x16x16 section is sent for real once the player comes within 32 blocks of it, at most 2 chunks per tick and nearest first, and stays real until its chunk is sent again. The Nether and the End have no daylight, so this doesn't apply there.
+
 Entities: other players and mobs are hidden while a straight line to them is blocked. They stay visible within 16 blocks, sight is checked every 5 ticks, and an entity only disappears after 3 misses in a row. Spectators see everything.
 
 Measured on one Windows machine, 450 generated chunks at view distance 10:
@@ -90,15 +92,21 @@ Measured on one Windows machine, 450 generated chunks at view distance 10:
 | --- | --- | --- |
 | Chunk block data after compression | 2.69 MB | 1.69 MB |
 | Entities sent to a bot in 40 seconds | 606 | 77 |
-| Extra CPU per chunk | none | about 1.3 ms |
+| Extra CPU per chunk, on a worker thread | none | about 4 ms |
 | Reveal check per player, every 5 ticks | none | under 0.1 ms on average, 2 ms at worst |
+| Real sections sent to a moving player, per chunk | none | about 1 ms on average, 3 ms at worst |
+| Real blocks sent walking underground at sprint speed | none | about 1100 per section, 9000 per second |
 
 This mainly saves bandwidth and hides information. The server still loads and simulates the same chunks, and masking costs CPU time on a worker thread each time a chunk is sent. The entity count depends heavily on the terrain.
 
 Limits:
 
 * Only clients on the current version are masked. Older Java clients through multiversion and Bedrock clients still get real chunks. Entity hiding was tested on an older Java client, not on Bedrock.
-* A block changed while players are nearby is sent as usual, even when it is buried.
+* A block changed while players are nearby is sent as usual, even when it is buried. A base under construction can show up for a client watching that chunk.
+* Daylight reaches down an open shaft, so a base at the bottom of one stays visible around the shaft. Close it off with a solid block.
+* A base within 32 blocks of a player is sent, walls and all, even if that player can't reach it.
+* Dark caves end in a solid wall until a player comes within 32 blocks. A very fast player or a teleport can see rock for a moment before the real sections arrive.
+* A cliff that faces a chunk that wasn't loaded yet can show the filler block until a player comes close.
 * Sounds and particles can still give things away.
 * Xray still shows valuables a player is close to, or could see from where they stand.
 * Ores on cave walls and chests under a roof can pop in as a player gets close or turns a corner. Further than 32 blocks away they are not shown, even in plain sight.

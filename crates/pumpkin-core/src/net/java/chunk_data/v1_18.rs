@@ -1,4 +1,5 @@
 use super::util::write_compound_nbt;
+use crate::world::culling::{self, HiddenSection, PlayerView, Underground};
 use pumpkin_protocol::codec::bit_set::BitSet;
 use pumpkin_protocol::codec::var_int::VarInt;
 use pumpkin_protocol::ser::NetworkWriteExt;
@@ -11,12 +12,28 @@ use pumpkin_world::chunk::palette::NetworkPalette;
 use std::io::Write;
 
 /// Serializes chunk data for Minecraft 1.18+ through 26.2+.
-#[expect(clippy::too_many_lines)]
 pub fn write_chunk_data(
+    chunk: &ChunkData,
+    write: impl Write,
+    version: &JavaMinecraftVersion,
+) -> Result<(), WritingError> {
+    write_chunk_data_for(chunk, write, version, None).map(|_| ())
+}
+
+/// Serializes chunk data as one player should get it, and returns which sections it got with
+/// their underground hidden.
+#[expect(clippy::too_many_lines)]
+pub fn write_chunk_data_for(
     chunk: &ChunkData,
     mut write: impl Write,
     version: &JavaMinecraftVersion,
-) -> Result<(), WritingError> {
+    view: Option<&PlayerView>,
+) -> Result<Vec<HiddenSection>, WritingError> {
+    let culling_on = crate::pumpkinx::server_culling();
+    let underground = view
+        .filter(|_| culling_on)
+        .and_then(|view| Underground::read(chunk, view));
+
     write.write_i32_be(chunk.x)?;
     write.write_i32_be(chunk.z)?;
 
@@ -70,6 +87,8 @@ pub fn write_chunk_data(
     drop(heightmaps);
 
     let mut culled_sections = Vec::new();
+    let mut buried = Vec::new();
+    let mut hidden = Vec::new();
     {
         let mut blocks_and_biomes_buf = Vec::new();
         let block_sections = chunk
@@ -85,9 +104,11 @@ pub fn write_chunk_data(
 
         let mut zero_bytes_count = 0;
 
-        if crate::pumpkinx::server_culling() {
-            let masked = crate::world::culling::mask_sections(&block_sections);
+        if culling_on {
+            let masked = culling::mask_for_player(&block_sections, underground.as_ref());
             culled_sections = masked.sections;
+            buried = masked.buried;
+            hidden = masked.hidden;
             *chunk
                 .section
                 .culled_valuables
@@ -205,14 +226,17 @@ pub fn write_chunk_data(
     // A block entity on a hidden block would give away what is there.
     let is_sent = |pos: &pumpkin_util::math::position::BlockPos| {
         let section = (pos.0.y - chunk.section.min_y).div_euclid(16) as usize;
-        culled_sections.get(section).and_then(Option::as_ref).is_none_or(|palette| {
-            let block = palette.get(
-                get_local_cord(pos.0.x) as usize & 0xF,
-                pos.0.y.rem_euclid(16) as usize,
-                get_local_cord(pos.0.z) as usize & 0xF,
-            );
-            block.to_state().block_entity_type != u16::MAX
-        })
+        culled_sections
+            .get(section)
+            .and_then(Option::as_ref)
+            .is_none_or(|palette| {
+                let block = palette.get(
+                    get_local_cord(pos.0.x) as usize & 0xF,
+                    pos.0.y.rem_euclid(16) as usize,
+                    get_local_cord(pos.0.z) as usize & 0xF,
+                );
+                block.to_state().block_entity_type != u16::MAX
+            })
     };
     let sent_count = block_entities.keys().filter(|pos| is_sent(pos)).count();
     write.write_var_int(&VarInt(sent_count as i32))?;
@@ -313,10 +337,13 @@ pub fn write_chunk_data(
         for section_index in 0..num_sections {
             if let LightContainer::Full(data) = &light_engine.block_light[section_index] {
                 write.write_var_int(&light_data_size)?;
-                write.write_slice(data.as_ref())?;
+                match buried.get(section_index).and_then(Option::as_ref) {
+                    Some(rows) => write.write_slice(&culling::darken_buried(data, rows))?,
+                    None => write.write_slice(data.as_ref())?,
+                }
             }
         }
     }
 
-    Ok(())
+    Ok(hidden)
 }

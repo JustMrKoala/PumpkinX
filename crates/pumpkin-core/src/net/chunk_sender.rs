@@ -6,10 +6,10 @@ use std::sync::{Arc, Weak};
 
 use crate::net::java::chunk_data::CChunkData;
 use pumpkin_data::packet::CURRENT_MC_VERSION;
+use pumpkin_protocol::MultiVersionJavaPacket;
 use pumpkin_protocol::codec::var_int::VarInt;
 use pumpkin_protocol::java::client::play::{CChunkBatchEnd, CChunkBatchStart, CUnloadChunk};
 use pumpkin_protocol::ser::NetworkWriteExt;
-use pumpkin_protocol::{ClientPacket, MultiVersionJavaPacket};
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::math::vector2::Vector2;
 use pumpkin_util::version::JavaMinecraftVersion;
@@ -18,6 +18,8 @@ use pumpkin_world::cylindrical_chunk_iterator::Cylindrical;
 use pumpkin_world::level::{Level, SyncChunk};
 
 use crate::net::ClientPlatform;
+use crate::net::java::chunk_data::v1_18::write_chunk_data_for;
+use crate::world::culling::{HiddenSection, PlayerView};
 
 const MIN_CHUNKS_PER_TICK: f32 = 0.01;
 const MAX_CHUNKS_PER_TICK: f32 = 64.0;
@@ -41,12 +43,15 @@ pub struct PreparedBatch {
     pub epoch_snapshot: u32,
     /// Client protocol, only for batch flow -> chunks are always encoded as `CURRENT_MC_VERSION`.
     pub target_version: JavaMinecraftVersion,
+    /// Server culling: set when the underground of these chunks is hidden from this player.
+    pub view: Option<PlayerView>,
 }
 
 #[derive(Clone)]
 pub struct EncodedChunk {
     pub position: Vector2<i32>,
     pub payload: Bytes,
+    pub hidden: Vec<HiddenSection>,
     pub chunk_ref: Weak<ChunkData>,
 }
 
@@ -75,6 +80,8 @@ pub struct ChunkSender {
     pub max_in_flight: u16,
     /// Server culling: hidden blocks this client is done with, until its chunk is sent again.
     settled_blocks: FxHashMap<Vector2<i32>, FxHashSet<BlockPos>>,
+    /// Server culling: sections this client holds with their underground hidden.
+    hidden_sections: FxHashMap<Vector2<i32>, Vec<HiddenSection>>,
 }
 
 impl ChunkSender {
@@ -90,6 +97,7 @@ impl ChunkSender {
             send_quota: 0.0,
             max_in_flight: 1,
             settled_blocks: FxHashMap::default(),
+            hidden_sections: FxHashMap::default(),
         }
     }
 
@@ -98,6 +106,7 @@ impl ChunkSender {
         self.sent_chunks.clear();
         self.awaiting_delivery.clear();
         self.settled_blocks.clear();
+        self.hidden_sections.clear();
         self.in_flight_batches = 0;
         self.send_quota = 0.0;
     }
@@ -140,6 +149,26 @@ impl ChunkSender {
     }
 
     #[must_use]
+    pub fn has_hidden_sections(&self) -> bool {
+        !self.hidden_sections.is_empty()
+    }
+
+    #[must_use]
+    pub fn hidden_sections(&self, chunk: &Vector2<i32>) -> &[HiddenSection] {
+        self.hidden_sections.get(chunk).map_or(&[], Vec::as_slice)
+    }
+
+    /// Notes that this client got the real blocks of these sections.
+    pub fn reveal_sections(&mut self, chunk: Vector2<i32>, revealed: &[HiddenSection]) {
+        if let Some(hidden) = self.hidden_sections.get_mut(&chunk) {
+            hidden.retain(|section| !revealed.contains(section));
+            if hidden.is_empty() {
+                self.hidden_sections.remove(&chunk);
+            }
+        }
+    }
+
+    #[must_use]
     pub fn sent_chunks_count(&self) -> usize {
         self.sent_chunks.len()
     }
@@ -148,6 +177,7 @@ impl ChunkSender {
     pub fn mark_sent_out_of_band(&mut self, pos: Vector2<i32>) {
         self.pending_chunks.remove(&pos);
         self.awaiting_delivery.remove(&pos);
+        self.hidden_sections.remove(&pos);
         self.sent_chunks.insert(pos);
     }
 
@@ -180,6 +210,7 @@ impl ChunkSender {
     pub fn unload_chunk(&mut self, client: &ClientPlatform, pos: Vector2<i32>) {
         self.pending_chunks.remove(&pos);
         self.settled_blocks.remove(&pos);
+        self.hidden_sections.remove(&pos);
         self.awaiting_delivery.remove(&pos);
         if self.sent_chunks.remove(&pos)
             && let ClientPlatform::Java(java_client) = client
@@ -264,6 +295,7 @@ impl ChunkSender {
         view_distance: NonZero<u8>,
         epoch: u32,
         version: JavaMinecraftVersion,
+        view: Option<PlayerView>,
     ) -> Option<PreparedBatch> {
         if version >= JavaMinecraftVersion::V_1_20_2 && self.in_flight_batches >= self.max_in_flight
         {
@@ -286,6 +318,7 @@ impl ChunkSender {
             chunks: candidates,
             epoch_snapshot: epoch,
             target_version: version,
+            view,
         })
     }
 
@@ -321,20 +354,25 @@ impl ChunkSender {
                 {
                     return None;
                 }
+                let mut hidden = Vec::new();
                 if let Some(writer) = legacy_writer {
                     if !writer(chunk, version, &mut chunk_buf) {
                         return None;
                     }
-                } else if CChunkData(chunk)
-                    .write_packet_data(&mut chunk_buf, &CURRENT_MC_VERSION)
-                    .is_err()
-                {
-                    return None;
+                } else {
+                    hidden = write_chunk_data_for(
+                        chunk,
+                        &mut chunk_buf,
+                        &CURRENT_MC_VERSION,
+                        batch.view.as_ref(),
+                    )
+                    .ok()?;
                 }
 
                 Some(EncodedChunk {
                     position: pos,
                     payload: Bytes::from(chunk_buf),
+                    hidden,
                     chunk_ref: Arc::downgrade(chunk),
                 })
             })
@@ -378,6 +416,12 @@ impl ChunkSender {
 
             self.pending_chunks.remove(&chunk.position);
             self.settled_blocks.remove(&chunk.position);
+            if chunk.hidden.is_empty() {
+                self.hidden_sections.remove(&chunk.position);
+            } else {
+                self.hidden_sections
+                    .insert(chunk.position, chunk.hidden.clone());
+            }
             self.sent_chunks.insert(chunk.position);
             dispatched_positions.push(chunk.position);
         }
@@ -456,6 +500,7 @@ mod tests {
             }],
             epoch_snapshot: 7,
             target_version: JavaMinecraftVersion::V_1_20_2,
+            view: None,
         };
         let mut sender = ChunkSender::new();
         sender.enqueue_chunk(position);
@@ -487,6 +532,7 @@ mod tests {
             }],
             epoch_snapshot: 7,
             target_version: JavaMinecraftVersion::V_1_20_2,
+            view: None,
         };
         let mut sender = ChunkSender::new();
         sender.enqueue_chunk(position);
@@ -508,6 +554,7 @@ mod tests {
             }],
             epoch_snapshot: 0,
             target_version: JavaMinecraftVersion::V_1_20_2,
+            view: None,
         };
         let mut first = ChunkSender::new();
         let mut second = ChunkSender::new();
@@ -587,6 +634,7 @@ mod tests {
             }],
             epoch_snapshot,
             target_version: JavaMinecraftVersion::V_1_20_2,
+            view: None,
         }
     }
 }
